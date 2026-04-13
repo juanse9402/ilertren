@@ -1,0 +1,29 @@
+# Especificaciones Técnicas: App Gestión Trenes Turísticos
+
+## 1. Descripción General
+Aplicación Web Progresiva (PWA) para la gestión operativa y financiera de trenes turísticos en tiempo real.
+
+## 2. Roles y Permisos
+- **Administrador:** Acceso total, gestión de flota, gestión de personal y analítica avanzada.
+- **Chofer:** Registro de viajes, visualización de sus propios datos del día y cierre de caja.
+
+## 3. Arquitectura de Datos (Supabase)
+### Tablas Principales:
+- `profiles`: id (uuid), nombre, rol (admin/chofer), train_id (fk).
+- `trains`: id, matricula, ciudad, estado (activo/inactivo).
+- `operations`: 
+    - id, fecha (default now), hora_inicio, 
+    - adultos (int), niños (int), 
+    - recaudacion (decimal), observaciones (text), 
+    - driver_id (fk), train_id (fk), completada (bool).
+
+## 4. Requerimientos Funcionales
+- Autenticación vía Supabase Auth.
+- Asignación dinámica de tren por usuario (perfil).
+- Filtros de seguridad RLS (Row Level Security) para que el chofer no vea datos de otros.
+- Dashboard administrativo con cálculos agregados (SUM adultos, SUM niños, SUM recaudación).
+
+## 5. Stack Tecnológico
+- **Frontend:** React.js o Next.js (Tailwind CSS para diseño).
+- **Backend/DB:** Supabase (PostgreSQL).
+- **Hosting:** Vercel o Netlify.

@@ -1,0 +1,6 @@
+Documento de Buenas Prácticas
+Seguridad de Datos (RLS): Activar Row Level Security en Supabase inmediatamente. Configurar políticas para que select en la tabla operations filtre por auth.uid() == driver_id.
+Diseño Mobile-First: Los choferes usarán la app en movimiento y probablemente en teléfonos. Los botones de entrada de pasajeros deben ser grandes (+ / -).
+Manejo de Offline: Dado que los trenes pueden pasar por zonas de baja cobertura, implementar una estrategia de caché o "Optimistic UI" para que el chofer pueda registrar datos y estos se sincronicen al recuperar señal.
+Validación de Datos: No permitir valores negativos en pasajeros o dinero. El "Cierre del día" debe bloquear la edición de registros anteriores para evitar alteraciones de datos.
+Logs de Auditoría: Registrar cuándo se creó cada operación para evitar que se reporten viajes de ayer como si fueran de hoy.

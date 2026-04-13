@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+/* ── Design Tokens ─────────────────────────────────────── */
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  color: rgba(255, 255, 255, 0.9);
+  background-color: #001a33; /* Ilertren Navy Dark */
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  /* Deep navy gradient */
+  background: radial-gradient(circle at top, #012a52, #001222);
+  background-attachment: fixed;
+}
+
+#root {
+  width: 100%;
+}
+
+/* ── Custom Utilities (Premium Layer) ──────────────────── */
+.glass-strong {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.input-field-premium {
+  @apply w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-6 text-white outline-none transition-all;
+}
+
+.input-field-premium:focus {
+  @apply border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.1)];
+}
+
+/* ── LEGACY FALLBACKS (Keep for safety during transition) ─────────────────────── */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.min-h-screen { min-height: 100vh; }
+.w-full { width: 100%; }
+.max-w-md { max-width: 448px; }
+.text-center { text-align: center; }
+.text-yellow-500 { color: #fbbf24; }
+.font-black { font-weight: 900; }
+.uppercase { text-transform: uppercase; }
+.tracking-widest { letter-spacing: 0.1em; }
+.rounded-3xl { border-radius: 1.5rem; }
+.rounded-xl { border-radius: 0.75rem; }
+.p-10 { padding: 2.5rem; }
+.mb-8 { margin-bottom: 2rem; }
+.gap-6 { gap: 1.5rem; }
+.text-sm { font-size: 0.875rem; }
+.text-xs { font-size: 0.75rem; }
+.font-sans { font-family: sans-serif; }
