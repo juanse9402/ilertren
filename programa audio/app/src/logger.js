@@ -34,6 +34,7 @@ export function log(message, level = 'info') {
   }
 
   const li = document.createElement('li');
+  li.className = 'log-line';
   li.dataset.level = level;
   li.innerHTML = `<span class="log-time">${time}</span><span class="log-msg">${message}</span>`;
   _listEl.prepend(li);
