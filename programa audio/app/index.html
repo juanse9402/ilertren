@@ -3,32 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0A0907">
-  <meta name="description" content="RouteMaker GPS — Cabina Ferroviaria PRO">
+  <meta name="theme-color" content="#120F0C">
+  <meta name="description" content="RouteMaker GPS — Audio tour guiado por GPS">
   <title>RouteMaker GPS</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
+
   <!-- Leaflet mapping library -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 <body>
 
-  <!-- ═══════════════════════════════════════════
-       MAIN APP SHELL
-  ════════════════════════════════════════════ -->
-  <div class="device" id="appShell">
-
+  <div class="app-shell" id="appShell">
+    
     <!-- TOP BAR -->
     <header class="topbar">
       <div class="brand">
         <div class="brand-mark">RM</div>
         <div>
-          <div class="brand-name">RouteMaker GPS</div>
+          <h1 class="brand-name">RouteMaker GPS</h1>
           <div class="brand-sub">Ilertren · Unidad 04</div>
         </div>
       </div>
-
+      
       <div class="status-cluster">
         <span class="clock" id="currentTimeClock">12:00</span>
         <div class="pill pill-net">📶 Offline · caché</div>
@@ -48,7 +50,7 @@
     <!-- MAIN GRID -->
     <div class="main">
 
-      <!-- LEFT COLUMN: CONTROLS & LOGS -->
+      <!-- LEFT COLUMN: CONTROLS ONLY -->
       <div class="right-col">
         <span class="hold-hint" id="holdHint">Mantén pulsado 3s</span>
         
@@ -96,31 +98,31 @@
             Reiniciar ruta completa
           </button>
         </div>
+      </div>
 
-        <!-- System Logs Card -->
-        <div class="log-card">
-          <div class="log-header">
-            <span class="log-title">Registro del sistema</span>
-            <span class="log-badge" id="logBadge">● Activo</span>
-          </div>
-          <div class="log-feed" id="logList" aria-live="polite" aria-relevant="additions">
-            <!-- Populated dynamically by logger.js -->
-          </div>
+      <!-- SYSTEM LOGS (sibling) -->
+      <div class="log-card">
+        <div class="log-header">
+          <span class="log-title">Registro del sistema</span>
+          <span class="log-badge" id="logBadge">● Activo</span>
+        </div>
+        <div class="log-feed" id="logList" aria-live="polite" aria-relevant="additions">
+          <!-- Populated dynamically by logger.js -->
         </div>
       </div>
 
-      <!-- RIGHT COLUMN: INFO & MAP -->
-      <div class="cluster-card">
+      <!-- STOPS SELECTOR (sibling) -->
+      <div class="stop-selector-wrap">
         <div class="eyebrow">Próxima parada · pulsa para cambiar</div>
-        
-        <!-- Stop Selector Dropdown -->
         <div class="stop-selector-container">
           <select id="stopSelector" class="stop-selector" aria-label="Seleccionar parada manualmente">
             <option value="" disabled selected>Cargando paradas...</option>
           </select>
         </div>
+      </div>
 
-        <!-- Live Schematic Map -->
+      <!-- LIVE MAP (sibling) -->
+      <div class="cluster-card">
         <div class="map-card">
           <div class="map-header">
             <span class="map-title">Recorrido en vivo</span>
@@ -146,27 +148,24 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Audio Progress Strip -->
-        <div class="progress-strip">
-          <div class="progress-strip-header">
-            <span class="audio-icon">♫</span>
-            <span class="progress-strip-label" id="audioLabel">Audio: Inactivo</span>
-            <span class="progress-strip-time"><span id="audioCurrentTime">0:00</span> / <span id="audioDuration">0:00</span></span>
-          </div>
-          <div class="progress-track">
-            <div class="progress-fill" id="progressBar" style="width:0%"></div>
-          </div>
+      <!-- AUDIO PROGRESS STRIP (sibling) -->
+      <div class="progress-strip">
+        <div class="progress-strip-header">
+          <span class="audio-icon">♫</span>
+          <span class="progress-strip-label" id="audioLabel">Audio: Inactivo</span>
+          <span class="progress-strip-time"><span id="audioCurrentTime">0:00</span> / <span id="audioDuration">0:00</span></span>
         </div>
-
+        <div class="progress-track">
+          <div class="progress-fill" id="progressBar" style="width:0%"></div>
+        </div>
       </div>
 
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════
-       EDITOR SCREEN (full-screen overlay)
-  ════════════════════════════════════════════ -->
+  <!-- EDITOR SCREEN (full-screen overlay) -->
   <div id="editorScreen" class="editor-overlay hidden" role="dialog" aria-modal="true" aria-label="Editor de ruta">
     <header class="editor-header">
       <h2 class="editor-title">Editor de ruta</h2>

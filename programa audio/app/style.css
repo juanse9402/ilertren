@@ -246,21 +246,22 @@ body {
 .main {
   display: grid;
   grid-template-columns: 0.82fr 1.18fr;
-  gap: 20px;
+  grid-template-rows: auto 1fr auto;
+  gap: 16px 20px;
   flex: 1;
   min-height: 0;
   position: relative;
   z-index: 10;
 }
 
-/* ===== LEFT: CONTROLS ===== */
+/* ===== LEFT COLUMN TOP: CONTROLS ===== */
 .right-col {
+  grid-column: 1;
+  grid-row: 1;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  height: 100%;
-  min-height: 0;
-  align-items: center;
+  width: 100%;
 }
 
 .hold-hint {
@@ -280,7 +281,7 @@ body {
   width: 172px;
   height: 172px;
   flex-shrink: 0;
-  margin: 0;
+  margin: 0 auto;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -497,8 +498,10 @@ body {
   cursor: not-allowed;
 }
 
-/* System logs */
+/* ===== LEFT COLUMN BOTTOM: SYSTEM LOGS ===== */
 .log-card {
+  grid-column: 1;
+  grid-row: 2 / span 2;
   background: var(--coal-900);
   border: 1px solid var(--coal-700);
   border-radius: var(--r-md);
@@ -606,18 +609,13 @@ body {
   background: var(--brick-bright);
 }
 
-/* ===== RIGHT: INFO PANEL ===== */
-.cluster-card {
-  background: linear-gradient(180deg, var(--coal-800), var(--coal-900));
-  border: 1px solid var(--coal-700);
-  border-radius: var(--r-lg);
-  padding: 16px 20px;
+/* ===== RIGHT COLUMN TOP: STOPS SELECTOR ===== */
+.stop-selector-wrap {
+  grid-column: 2;
+  grid-row: 1;
   display: flex;
   flex-direction: column;
-  position: relative;
-  overflow: hidden;
-  height: 100%;
-  min-height: 0;
+  width: 100%;
 }
 
 .eyebrow {
@@ -632,7 +630,7 @@ body {
 }
 
 .stop-selector-container {
-  margin-bottom: 14px;
+  margin-bottom: 0;
   position: relative;
   width: 100%;
   flex-shrink: 0;
@@ -685,7 +683,22 @@ body {
   font-weight: 500;
 }
 
-/* Map Card */
+/* ===== RIGHT COLUMN MIDDLE: LIVE MAP ===== */
+.cluster-card {
+  grid-column: 2;
+  grid-row: 2;
+  background: linear-gradient(180deg, var(--coal-800), var(--coal-900));
+  border: 1px solid var(--coal-700);
+  border-radius: var(--r-lg);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  min-height: 0;
+}
+
 .map-card {
   flex: 1;
   min-height: 0;
@@ -793,14 +806,15 @@ body {
   100% { transform: scale(2); opacity: 0; }
 }
 
-/* Audio progress */
+/* ===== RIGHT COLUMN BOTTOM: AUDIO PROGRESS STRIP ===== */
 .progress-strip {
-  margin-top: 14px;
-  flex-shrink: 0;
+  grid-column: 2;
+  grid-row: 3;
   background: var(--coal-950);
   border: 1px solid var(--coal-600);
   border-radius: var(--r-md);
   padding: 14px 18px;
+  width: 100%;
 }
 
 .progress-strip-header {
@@ -1148,29 +1162,38 @@ input[type="file"].audio-file-input {
     overflow: auto;
   }
   .main {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     height: auto;
-    gap: 24px;
     flex: none;
   }
+  
+  /* REORDERING MAIN GRID ITEMS FOR MOBILE VIEW */
+  .stop-selector-wrap {
+    order: 1; /* Stops dropdown at the top */
+  }
+  .progress-strip {
+    order: 2; /* Audio progress strip second */
+  }
   .right-col {
-    padding-top: 0;
+    order: 3; /* Controls third */
     height: auto;
     align-items: center;
   }
-  .hold-btn-wrap {
-    margin: 10px auto;
-  }
   .cluster-card {
-    height: auto;
-  }
-  .map-card {
+    order: 4; /* Map fourth */
     height: 350px;
     flex: none;
   }
   .log-card {
+    order: 5; /* Logs card at the bottom */
     height: 240px;
     flex: none;
+  }
+  
+  .hold-btn-wrap {
+    margin: 10px auto;
   }
   .topbar {
     flex-direction: column;
