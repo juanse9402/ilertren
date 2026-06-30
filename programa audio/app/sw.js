@@ -9,7 +9,7 @@
  * Versioning: bump CACHE_VERSION to force re-cache on deploy.
  */
 
-const CACHE_VERSION = 'routemaker-v13';
+const CACHE_VERSION = 'routemaker-v14';
 
 const STATIC_ASSETS = [
   './',
@@ -26,9 +26,9 @@ const STATIC_ASSETS = [
   './src/cast.js',
   './src/editor.js',
   
-  // Leaflet CDN assets for offline caching
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+  // Leaflet assets (local offline copies)
+  './leaflet/leaflet.css',
+  './leaflet/leaflet.js',
   
   // Tourist App Core Assets
   './acceso-turista/',
