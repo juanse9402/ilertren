@@ -155,134 +155,7 @@ function aplicarEstado(estado) {
   if (el.btnRestart) el.btnRestart.disabled = estado === Estados.INACTIVO;
 }
 
-// ─── Leaflet Map Variables & Setup ────────────────────────────────────────────
-let map = null;
-let stopMarkers = [];
-let routePolyline = null;
-let vehicleMarker = null;
-
-// Custom Marker Icons matching the cabina style
-const createStopIcon = (num, isActive) => {
-  const borderCol = isActive ? '#C8451E' : '#C99A4A';
-  const innerBg = isActive ? '#C8451E' : '#171310';
-  const dotHtml = isActive 
-    ? `<div style="width: 20px; height: 20px; border-radius: 50%; background: #171310; border: 3px solid ${borderCol}; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5);"><div style="width: 8px; height: 8px; border-radius: 50%; background: ${innerBg};"></div></div>`
-    : `<div style="width: 14px; height: 14px; border-radius: 50%; background: #171310; border: 2px solid ${borderCol}; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"><span style="font-size: 8px; font-weight: 700; color: #C99A4A; font-family: 'JetBrains Mono';">${num}</span></div>`;
-  
-  return window.L.divIcon({
-    className: 'custom-stop-marker',
-    html: dotHtml,
-    iconSize: isActive ? [20, 20] : [14, 14],
-    iconAnchor: isActive ? [10, 10] : [7, 7]
-  });
-};
-
-let trainIcon = null;
-
-const getTrainIcon = () => {
-  if (!trainIcon && window.L) {
-    trainIcon = window.L.divIcon({
-      className: 'custom-train-marker',
-      html: `
-        <div style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
-          <div class="vehicle-pulse" style="position: absolute; width: 44px; height: 44px; border-radius: 50%; border: 2px solid #C8451E; animation: pulse 2.2s ease-out infinite; transform-origin: center; pointer-events: none;"></div>
-          <div style="width: 26px; height: 26px; border-radius: 50%; background: #171310; border: 2.5px solid #C8451E; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6);">
-            <div style="width: 12px; height: 12px; border-radius: 50%; background: #C8451E;"></div>
-          </div>
-        </div>
-      `,
-      iconSize: [44, 44],
-      iconAnchor: [22, 22]
-    });
-  }
-  return trainIcon;
-};
-
-function initLeafletMap(route) {
-  if (!window.L) {
-    logWarn("Mapa en vivo no disponible (Librería Leaflet no cargada).");
-    return;
-  }
-  if (!document.getElementById('map') || map || route.length === 0) return;
-
-  const firstStop = route[0];
-  
-  // Create Leaflet Map
-  map = window.L.map('map', {
-    zoomControl: false,
-    attributionControl: false
-  }).setView([firstStop.lat, firstStop.lon], 16);
-
-  // Google Maps tile layer with live traffic overlay
-  window.L.tileLayer('https://mt1.google.com/vt/lyrs=m,traffic&hl=es&x={x}&y={y}&z={z}', {
-    maxZoom: 21,
-    minZoom: 10
-  }).addTo(map);
-
-  // Add Zoom Control at bottom right
-  window.L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-  // Create dynamic vehicle position marker
-  vehicleMarker = window.L.marker([firstStop.lat, firstStop.lon], { icon: getTrainIcon(), zIndexOffset: 1000 }).addTo(map);
-
-  // Populate markers and route line
-  updateMapMarkersAndPath();
-}
-
-function updateMapMarkersAndPath() {
-  if (!window.L || !map) return;
-  const { route, currentStopIndex } = getState();
-  
-  // Remove old markers
-  stopMarkers.forEach(m => map.removeLayer(m));
-  stopMarkers = [];
-
-  if (routePolyline) {
-    map.removeLayer(routePolyline);
-  }
-
-  if (route.length === 0) return;
-
-  // Draw new markers for all stops
-  route.forEach((stop, idx) => {
-    const isActive = (idx === currentStopIndex);
-    const m = window.L.marker([stop.lat, stop.lon], {
-      icon: createStopIcon(idx + 1, isActive)
-    }).addTo(map);
-    m.bindTooltip(`<b>${idx + 1}. ${stop.name}</b>`, { direction: 'top', offset: [0, -10] });
-    stopMarkers.push(m);
-  });
-
-  // Draw entire route line (polyline)
-  const coords = route.map(stop => [stop.lat, stop.lon]);
-  routePolyline = window.L.polyline(coords, {
-    color: '#C8451E',
-    weight: 4,
-    opacity: 0.8,
-    lineJoin: 'round'
-  }).addTo(map);
-
-  // Keep vehicle position synced
-  if (vehicleMarker && route[currentStopIndex]) {
-    const activeStop = route[currentStopIndex];
-    vehicleMarker.setLatLng([activeStop.lat, activeStop.lon]);
-    map.panTo([activeStop.lat, activeStop.lon]);
-  }
-}
-
-function updateMapVehicleMarker(index) {
-  const { route } = getState();
-  if (window.L && map && vehicleMarker && route[index]) {
-    const stop = route[index];
-    vehicleMarker.setLatLng([stop.lat, stop.lon]);
-    map.panTo([stop.lat, stop.lon]);
-
-    // Update icons to highlight current stop
-    stopMarkers.forEach((m, idx) => {
-      m.setIcon(createStopIcon(idx + 1, idx === index));
-    });
-  }
-}
+// (Leaflet map features disabled)
 
 function updateRouteUI() {
   const { route, currentStopIndex } = getState();
@@ -334,7 +207,7 @@ function updateRouteUI() {
     el.mapStopCounter.textContent = `${currentStopIndex + 1} / ${total}`;
   }
 
-  updateMapVehicleMarker(currentStopIndex);
+
 
   // Update progress strip label with active stop name
   const elAudioLabel = document.getElementById('audioLabel');
@@ -720,11 +593,7 @@ function wireGPSEvents() {
       el.mapSpeed.textContent = `${kmh} km/h`;
     }
 
-    // Update real Leaflet map vehicle position
-    if (map && vehicleMarker && latitude && longitude) {
-      vehicleMarker.setLatLng([latitude, longitude]);
-      map.panTo([latitude, longitude]);
-    }
+
   });
 
   window.addEventListener('gps:started', () => {
@@ -796,7 +665,6 @@ function wireStateSubscriptions() {
   subscribe(['currentStopIndex', 'route'], updateRouteUI);
   subscribe('route', (newRoute) => {
     populateStopSelector(newRoute);
-    updateMapMarkersAndPath();
   });
   subscribe('gpsStatus',   (val) => updateGPSStatusUI(val));
   subscribe('audioStatus', (val) => updateAudioStatusUI(val));
@@ -900,7 +768,6 @@ async function boot() {
     const loaded = await loadRoute();
     if (loaded) {
       populateStopSelector(getState().route);
-      initLeafletMap(getState().route);
       updateRouteUI();
       logSuccess('Listo. Mantén pulsado "Iniciar Ruta" para comenzar.');
     } else {

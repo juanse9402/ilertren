@@ -683,93 +683,67 @@ body {
   font-weight: 500;
 }
 
-/* ===== RIGHT COLUMN MIDDLE: LIVE MAP ===== */
-.cluster-card {
+/* ===== RIGHT COLUMN MIDDLE: TRIP STATISTICS ===== */
+.stats-card {
   grid-column: 2;
   grid-row: 2;
   background: linear-gradient(180deg, var(--coal-800), var(--coal-900));
   border: 1px solid var(--coal-700);
   border-radius: var(--r-lg);
-  padding: 16px 20px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  position: relative;
-  overflow: hidden;
+  justify-content: center;
   height: 100%;
   min-height: 0;
-}
-
-.map-card {
-  flex: 1;
-  min-height: 0;
   position: relative;
-  border-radius: var(--r-md);
   overflow: hidden;
-  border: 1px solid var(--coal-600);
-  background: #171310;
-  display: flex;
-  flex-direction: column;
 }
 
-.map-header {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+.stats-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 13px 15px;
-  background: linear-gradient(180deg, rgba(18,15,12,.92), rgba(18,15,12,0));
-  z-index: 10;
-  gap: 10px;
-  pointer-events: none;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+  width: 100%;
 }
 
-.map-title {
-  font-size: 10.5px;
+.stats-title {
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--paper-dimmer);
-  letter-spacing: 1.4px;
+  letter-spacing: 1.8px;
   text-transform: uppercase;
-  flex-shrink: 0;
 }
 
-.map-eta {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 12px;
+.stats-eta {
+  font-size: 13px;
   font-weight: 700;
   color: var(--paper);
   font-family: 'JetBrains Mono', monospace;
-  background: rgba(18,15,12,.85);
-  padding: 6px 13px;
+  background: var(--coal-950);
+  padding: 8px 16px;
   border-radius: 100px;
   border: 1px solid var(--coal-600);
   white-space: nowrap;
-  flex-shrink: 0;
-  pointer-events: auto;
 }
 
-.map-stats-row {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+.stats-grid {
   display: flex;
-  background: linear-gradient(0deg, rgba(18,15,12,.97), rgba(18,15,12,.8) 65%, transparent);
-  padding: 28px 16px 14px;
-  z-index: 10;
-  pointer-events: none;
+  background: var(--coal-950);
+  border: 1px solid var(--coal-600);
+  border-radius: var(--r-md);
+  padding: 20px 12px;
+  width: 100%;
 }
 
 .route-stat {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 0 12px;
+  gap: 6px;
+  padding: 0 16px;
   border-right: 1px solid rgba(237,230,214,.1);
 }
 
@@ -782,28 +756,21 @@ body {
 }
 
 .route-stat-label {
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--paper-dimmer);
   font-weight: 500;
   letter-spacing: .2px;
 }
 
 .route-stat-value {
-  font-size: 17px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--paper);
   font-family: 'JetBrains Mono', monospace;
-  pointer-events: auto;
 }
 
 .route-stat-value.accent {
   color: var(--brick-bright);
-}
-
-/* Leaflet specific markers visual tweaks */
-@keyframes pulse {
-  0% { transform: scale(.7); opacity: .5; }
-  100% { transform: scale(2); opacity: 0; }
 }
 
 /* ===== RIGHT COLUMN BOTTOM: AUDIO PROGRESS STRIP ===== */
@@ -1181,10 +1148,11 @@ input[type="file"].audio-file-input {
     height: auto;
     align-items: center;
   }
-  .cluster-card {
-    order: 4; /* Map fourth */
-    height: 350px;
+  .stats-card {
+    order: 4; /* Trip stats fourth */
+    height: auto;
     flex: none;
+    padding: 16px;
   }
   .log-card {
     order: 5; /* Logs card at the bottom */
@@ -1259,6 +1227,22 @@ input[type="file"].audio-file-input {
     padding: 10px 36px 10px 16px;
     background-position: right 16px center;
     background-size: 16px;
+  }
+  .stats-card {
+    padding: 16px;
+  }
+  .stats-header {
+    margin-bottom: 12px;
+  }
+  .stats-grid {
+    padding: 12px 8px;
+  }
+  .route-stat {
+    padding: 0 10px;
+    gap: 4px;
+  }
+  .route-stat-value {
+    font-size: 18px;
   }
   .progress-strip {
     padding: 10px 14px;

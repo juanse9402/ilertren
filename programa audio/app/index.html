@@ -12,10 +12,6 @@
 
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
-
-  <!-- Leaflet mapping library (local for 100% offline support) -->
-  <link rel="stylesheet" href="leaflet/leaflet.css" />
-  <script src="leaflet/leaflet.js"></script>
 </head>
 <body>
 
@@ -121,31 +117,24 @@
         </div>
       </div>
 
-      <!-- LIVE MAP (sibling) -->
-      <div class="cluster-card">
-        <div class="map-card">
-          <div class="map-header">
-            <span class="map-title">Recorrido en vivo</span>
-            <div class="map-eta" id="mapEta">🚏 Próxima en — m</div>
+      <!-- TRIP STATISTICS CARD (sibling replacing map) -->
+      <div class="stats-card">
+        <div class="stats-header">
+          <span class="stats-title">Estadísticas del recorrido</span>
+          <span class="stats-eta" id="mapEta">🚏 Próxima en — m</span>
+        </div>
+        <div class="stats-grid">
+          <div class="route-stat">
+            <span class="route-stat-label">Parada actual</span>
+            <span class="route-stat-value accent" id="mapStopCounter">1 / 30</span>
           </div>
-
-          <!-- Leaflet interactive map container -->
-          <div id="map" style="width: 100%; height: 100%; flex: 1; min-height: 0; z-index: 1; background: #171310;"></div>
-
-          <!-- Map Stats Row -->
-          <div class="map-stats-row">
-            <div class="route-stat">
-              <span class="route-stat-label">Parada actual</span>
-              <span class="route-stat-value accent" id="mapStopCounter">1 / 30</span>
-            </div>
-            <div class="route-stat">
-              <span class="route-stat-label">Tiempo en ruta</span>
-              <span class="route-stat-value" id="mapTimeInRoute">00:00:00</span>
-            </div>
-            <div class="route-stat">
-              <span class="route-stat-label">Velocidad</span>
-              <span class="route-stat-value" id="mapSpeed">— km/h</span>
-            </div>
+          <div class="route-stat">
+            <span class="route-stat-label">Tiempo en ruta</span>
+            <span class="route-stat-value" id="mapTimeInRoute">00:00:00</span>
+          </div>
+          <div class="route-stat">
+            <span class="route-stat-label">Velocidad</span>
+            <span class="route-stat-value" id="mapSpeed">— km/h</span>
           </div>
         </div>
       </div>
