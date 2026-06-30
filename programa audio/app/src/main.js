@@ -746,7 +746,7 @@ async function boot() {
   try {
     // 1. Logger
     initLogger(el.logList);
-    logInfo('RouteMaker iniciando...');
+    logInfo('Audio Ilertren iniciando...');
 
     // 2. Audio player
     initAudio(el.audioPlayer);
@@ -803,7 +803,7 @@ async function boot() {
     registerServiceWorker();
 
   } catch (err) {
-    console.error('[RouteMaker] Fatal boot error:', err);
+    console.error('[AudioIlertren] Fatal boot error:', err);
     if (el.stopSelector) el.stopSelector.innerHTML = '<option disabled selected>Error de inicio</option>';
     if (el.logList) {
       const li = document.createElement('li');
@@ -845,12 +845,12 @@ function initTheme() {
 // ─── Global Error Boundary ───────────────────────────────────────────────────
 
 window.addEventListener('unhandledrejection', (e) => {
-  console.error('[RouteMaker] Unhandled promise rejection:', e.reason);
+  console.error('[AudioIlertren] Unhandled promise rejection:', e.reason);
   logError?.(`Error no controlado: ${e.reason?.message ?? e.reason}`);
 });
 
 window.addEventListener('error', (e) => {
-  console.error('[RouteMaker] Uncaught error:', e.error);
+  console.error('[AudioIlertren] Uncaught error:', e.error);
   logError?.(`Error: ${e.error?.message ?? e.message}`);
 });
 

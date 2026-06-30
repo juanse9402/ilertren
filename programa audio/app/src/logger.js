@@ -24,7 +24,7 @@ export function log(message, level = 'info') {
 
   // Console output
   const consoleFn = { info: 'log', success: 'log', warn: 'warn', error: 'error' }[level] || 'log';
-  console[consoleFn](`[RouteMaker][${level.toUpperCase()}] ${message}`);
+  console[consoleFn](`[AudioIlertren][${level.toUpperCase()}] ${message}`);
 
   if (!_listEl) return;
 
