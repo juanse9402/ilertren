@@ -9,13 +9,13 @@
 #        - trenconductor.netlify.app/*
 #        - localhost/*  (for local dev)
 #
-# For LOCAL development, create app/env-config.js manually:
-#   echo "window.GOOGLE_MAPS_KEY='YOUR_KEY_HERE';" > app/env-config.js
+# For LOCAL development, create env-config.js manually:
+#   echo "window.GOOGLE_MAPS_KEY='YOUR_KEY_HERE';" > env-config.js
 # Add it to .gitignore so it's never committed.
 
 [build]
-  command = "echo \"window.GOOGLE_MAPS_KEY='$GOOGLE_MAPS_KEY';\" > app/env-config.js"
-  publish = "app"
+  command = "echo \"window.GOOGLE_MAPS_KEY='$GOOGLE_MAPS_KEY';\" > env-config.js"
+  publish = "."
 
 # ─── Security Headers ─────────────────────────────────────────────────────────
 [[headers]]
