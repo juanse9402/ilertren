@@ -281,6 +281,9 @@ body {
   height: 172px;
   flex-shrink: 0;
   margin: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .hold-btn-wrap svg.ring {
@@ -289,6 +292,7 @@ body {
   transform: rotate(-90deg);
   position: absolute;
   inset: 0;
+  pointer-events: none;
 }
 
 .hold-track {
@@ -328,6 +332,7 @@ body {
   transition: transform .15s ease, border-color .3s ease;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .hold-core svg {
@@ -1130,7 +1135,7 @@ input[type="file"].audio-file-input {
 }
 
 /* === Responsive queries for layout stacking === */
-@media (max-width: 900px) {
+@media (max-width: 900px), (max-height: 600px) {
   body {
     padding: 0;
     overflow: auto;
@@ -1151,6 +1156,7 @@ input[type="file"].audio-file-input {
   .right-col {
     padding-top: 0;
     height: auto;
+    align-items: center;
   }
   .hold-btn-wrap {
     margin: 10px auto;

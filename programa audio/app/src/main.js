@@ -537,8 +537,15 @@ let routePaused = false;
 function wireControls() {
   // Circular Hold-to-Start Event Listeners
   if (el.holdBtn) {
-    el.holdBtn.addEventListener('mousedown', onHoldPress);
-    el.holdBtn.addEventListener('touchstart', e => { e.preventDefault(); onHoldPress(e); }, { passive: false });
+    // Prevent magnifying glass / copy-paste popup menus on touch devices during hold
+    el.holdBtn.addEventListener('contextmenu', e => e.preventDefault());
+
+    const startTarget = el.holdCore || el.holdBtn;
+    startTarget.addEventListener('mousedown', onHoldPress);
+    startTarget.addEventListener('touchstart', e => {
+      if (e.cancelable) e.preventDefault();
+      onHoldPress(e);
+    }, { passive: false });
     
     window.addEventListener('mouseup', onHoldRelease);
     window.addEventListener('touchend', onHoldRelease);

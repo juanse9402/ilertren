@@ -9,7 +9,7 @@
  * Versioning: bump CACHE_VERSION to force re-cache on deploy.
  */
 
-const CACHE_VERSION = 'routemaker-v11';
+const CACHE_VERSION = 'routemaker-v12';
 
 const STATIC_ASSETS = [
   './',
