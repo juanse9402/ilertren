@@ -32,6 +32,32 @@
   --r-sm: 3px;
 }
 
+/* ===== MODO CLARO / DIA ===== */
+.light-mode {
+  /* Fondos: tonos crema en lugar de carbón */
+  --coal-950: #F7F2E7;
+  --coal-900: #EFE8D8;
+  --coal-800: #E5DCC6;
+  --coal-700: #D6CAA9;
+  --coal-600: #BFAE82;
+  --hairline: #C9BA92;
+
+  /* Texto: carbón sobre fondo claro */
+  --paper:        #241C12;
+  --paper-dim:    #4A3D26;
+  --paper-dimmer: #6E5D3D;
+
+  /* Acentos reajustados para alto contraste en fondo claro */
+  --brick:        #8C2A18;
+  --brick-bright: #A8351F;
+  --brick-dim:    #C8451E;
+  --brass:        #8C702F;
+  --brass-dim:    #6E5621;
+  --ok:           #3D6B3C;
+  --warn:         #8C702F;
+  --danger:       #8C2A18;
+}
+
 /* === Reset === */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -243,6 +269,32 @@ body {
   color: var(--paper);
 }
 
+/* Botón toggle de tema (sol/luna) */
+.btn-theme {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--coal-800);
+  border: 1px solid var(--coal-600);
+  color: var(--paper-dim);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.2s, transform 0.15s;
+  line-height: 1;
+  padding: 0;
+}
+
+.btn-theme:hover {
+  background: var(--coal-700);
+  color: var(--paper);
+  border-color: var(--brass-dim);
+  transform: rotate(20deg);
+}
+
 /* ===== MAIN GRID ===== */
 .main {
   display: grid;
@@ -353,6 +405,17 @@ body {
 
 .hold-core.started {
   border-color: var(--ok);
+}
+
+/* Animación de pulso: sólo cuando la ruta está activa (no en pausa) */
+@keyframes routePulse {
+  0%   { box-shadow: inset 0 2px 8px rgba(0,0,0,.5), 0 10px 26px rgba(0,0,0,.4), 0 0 0 0   rgba(91,138,90,.55); }
+  70%  { box-shadow: inset 0 2px 8px rgba(0,0,0,.5), 0 10px 26px rgba(0,0,0,.4), 0 0 0 16px rgba(91,138,90,0); }
+  100% { box-shadow: inset 0 2px 8px rgba(0,0,0,.5), 0 10px 26px rgba(0,0,0,.4), 0 0 0 0   rgba(91,138,90,0); }
+}
+
+.hold-core.running {
+  animation: routePulse 1.8s ease-out infinite;
 }
 
 /* Pause/Resume/Stop row */

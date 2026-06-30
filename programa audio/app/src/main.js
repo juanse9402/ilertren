@@ -81,6 +81,9 @@ const el = {
   btnAddStop:     document.getElementById('btnAddStop'),
   btnExport:      document.getElementById('btnExport'),
   btnResetRoute:  document.getElementById('btnResetRoute'),
+
+  // Theme toggle
+  btnTheme: document.getElementById('btnTheme'),
 };
 
 // ─── Wake Lock ────────────────────────────────────────────────────────────────
@@ -255,7 +258,7 @@ let holdStartTime = null;
 let holdRafId = null;
 let routeStarted = false;
 const CIRCUMFERENCE = 478;
-const HOLD_MS = 3000;
+const HOLD_MS = 1500;
 
 function setHoldProgress(p) {
   if (el.holdFill) {
@@ -326,7 +329,7 @@ function holdReset() {
   setHoldProgress(0);
   holdStartTime = null;
   if (el.holdLabel) el.holdLabel.textContent = 'Iniciar ruta';
-  if (el.holdHint) el.holdHint.textContent = 'Mantén pulsado 3s';
+  if (el.holdHint) el.holdHint.textContent = 'Mantén pulsado 1.5s';
 }
 
 async function executeRouteStart() {
@@ -334,6 +337,7 @@ async function executeRouteStart() {
   if (el.holdCore) {
     el.holdCore.style.transform = 'scale(1)';
     el.holdCore.classList.add('started');
+    el.holdCore.classList.add('running'); // animación pulso: ruta activa
   }
   if (el.holdLabel) el.holdLabel.textContent = 'Ruta iniciada';
   if (el.holdHint) el.holdHint.textContent = 'GPS activo';
@@ -441,6 +445,7 @@ function wireControls() {
         stopGPS();
         pauseAudio();
         stopRouteTimer();
+        if (el.holdCore) el.holdCore.classList.remove('running'); // pausa: quitar pulso
       } else {
         // Apply Active Visuals
         el.pauseBtn.classList.remove('is-paused');
@@ -453,6 +458,7 @@ function wireControls() {
         startGPS();
         resumeAudio();
         startRouteTimer();
+        if (el.holdCore) el.holdCore.classList.add('running'); // reanudado: volver pulso
       }
     });
   }
@@ -474,6 +480,7 @@ function wireControls() {
 
       // Revert Circular hold visual state
       holdReset();
+      if (el.holdCore) el.holdCore.classList.remove('running', 'started');
       updateGPSStatusUI('idle');
 
       // Hide pause/stop row
@@ -758,6 +765,9 @@ async function boot() {
     // Initialize RGPD modal listeners
     initRGPD();
 
+    // Initialize theme (light/dark) toggle
+    initTheme();
+
     // Start local time clock
     startClock();
 
@@ -789,6 +799,34 @@ async function boot() {
       el.logList.prepend(li);
     }
   }
+}
+
+// ─── Theme Toggle (Modo Claro / Oscuro) ─────────────────────────────────────────────
+
+function initTheme() {
+  const btn = el.btnTheme;
+  if (!btn) return;
+
+  // Restore last saved preference
+  const saved = localStorage.getItem('routemaker_theme');
+  if (saved === 'light') {
+    document.body.classList.add('light-mode');
+    btn.textContent = '🌙';
+    btn.setAttribute('aria-label', 'Cambiar a modo oscuro');
+  }
+
+  btn.addEventListener('click', () => {
+    const isLight = document.body.classList.toggle('light-mode');
+    if (isLight) {
+      btn.textContent = '🌙';
+      btn.setAttribute('aria-label', 'Cambiar a modo oscuro');
+      localStorage.setItem('routemaker_theme', 'light');
+    } else {
+      btn.textContent = '\u2600\uFE0F'; // ☀️
+      btn.setAttribute('aria-label', 'Cambiar a modo claro');
+      localStorage.setItem('routemaker_theme', 'dark');
+    }
+  });
 }
 
 // ─── Global Error Boundary ───────────────────────────────────────────────────
