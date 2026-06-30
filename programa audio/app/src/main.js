@@ -177,19 +177,26 @@ const createStopIcon = (num, isActive) => {
   });
 };
 
-const trainIcon = window.L.divIcon({
-  className: 'custom-train-marker',
-  html: `
-    <div style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
-      <div class="vehicle-pulse" style="position: absolute; width: 44px; height: 44px; border-radius: 50%; border: 2px solid #C8451E; animation: pulse 2.2s ease-out infinite; transform-origin: center; pointer-events: none;"></div>
-      <div style="width: 26px; height: 26px; border-radius: 50%; background: #171310; border: 2.5px solid #C8451E; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6);">
-        <div style="width: 12px; height: 12px; border-radius: 50%; background: #C8451E;"></div>
-      </div>
-    </div>
-  `,
-  iconSize: [44, 44],
-  iconAnchor: [22, 22]
-});
+let trainIcon = null;
+
+const getTrainIcon = () => {
+  if (!trainIcon && window.L) {
+    trainIcon = window.L.divIcon({
+      className: 'custom-train-marker',
+      html: `
+        <div style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+          <div class="vehicle-pulse" style="position: absolute; width: 44px; height: 44px; border-radius: 50%; border: 2px solid #C8451E; animation: pulse 2.2s ease-out infinite; transform-origin: center; pointer-events: none;"></div>
+          <div style="width: 26px; height: 26px; border-radius: 50%; background: #171310; border: 2.5px solid #C8451E; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6);">
+            <div style="width: 12px; height: 12px; border-radius: 50%; background: #C8451E;"></div>
+          </div>
+        </div>
+      `,
+      iconSize: [44, 44],
+      iconAnchor: [22, 22]
+    });
+  }
+  return trainIcon;
+};
 
 function initLeafletMap(route) {
   if (!document.getElementById('map') || map || route.length === 0) return;
@@ -212,7 +219,7 @@ function initLeafletMap(route) {
   window.L.control.zoom({ position: 'bottomright' }).addTo(map);
 
   // Create dynamic vehicle position marker
-  vehicleMarker = window.L.marker([firstStop.lat, firstStop.lon], { icon: trainIcon, zIndexOffset: 1000 }).addTo(map);
+  vehicleMarker = window.L.marker([firstStop.lat, firstStop.lon], { icon: getTrainIcon(), zIndexOffset: 1000 }).addTo(map);
 
   // Populate markers and route line
   updateMapMarkersAndPath();
