@@ -51,6 +51,7 @@ body {
   margin: 0;
   color: var(--paper);
   overflow: hidden;
+  overscroll-behavior: none; /* evita scroll de página completa en touch devices */
 }
 
 .device {
@@ -509,9 +510,10 @@ body {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100%;
+  /* Altura máxima fija: header (~35px) + ~4 líneas de log (~28px c/u) = ~148px */
+  max-height: 180px;
   min-height: 0;
-  overflow: hidden;
+  overflow: hidden; /* el contenedor nunca crece más allá de max-height */
 }
 
 .log-header {
@@ -544,7 +546,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  overflow-y: auto;
+  overflow-y: auto;              /* scroll INTERNO solo aquí */
+  overscroll-behavior: contain;  /* el scroll no se propaga a la página */
   flex: 1;
   min-height: 0;
   scrollbar-width: thin;
