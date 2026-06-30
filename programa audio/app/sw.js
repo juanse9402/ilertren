@@ -9,7 +9,7 @@
  * Versioning: bump CACHE_VERSION to force re-cache on deploy.
  */
 
-const CACHE_VERSION = 'routemaker-v19';
+const CACHE_VERSION = 'routemaker-v20';
 
 const STATIC_ASSETS = [
   './',
@@ -63,6 +63,14 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+
+  // ── Pass Google Maps API through to network (tiles cannot be cached) ──
+  const isMapsRequest = url.hostname.includes('googleapis.com')
+                     || url.hostname.includes('gstatic.com');
+  if (isMapsRequest) {
+    // Let the browser handle it — no SW interception
+    return;
+  }
 
   // Network-first for route.json (always try to get fresh data)
   if (url.pathname.endsWith('route.json')) {

@@ -118,26 +118,38 @@
         </div>
       </div>
 
-      <!-- TRIP STATISTICS CARD (sibling replacing map) -->
-      <div class="stats-card">
-        <div class="stats-header">
-          <span class="stats-title">Estadísticas del recorrido</span>
-          <span class="stats-eta" id="mapEta">🚏 Próxima en — m</span>
-        </div>
-        <div class="stats-grid">
-          <div class="route-stat">
-            <span class="route-stat-label">Parada actual</span>
-            <span class="route-stat-value accent" id="mapStopCounter">1 / 30</span>
-          </div>
-          <div class="route-stat">
-            <span class="route-stat-label">Tiempo en ruta</span>
-            <span class="route-stat-value" id="mapTimeInRoute">00:00:00</span>
-          </div>
-          <div class="route-stat">
-            <span class="route-stat-label">Velocidad</span>
-            <span class="route-stat-value" id="mapSpeed">— km/h</span>
+      <!-- LIVE MAP CARD — Google Maps navigation view (sibling) -->
+      <div class="cluster-card" id="mapCard">
+
+        <!-- Google Maps renders here -->
+        <div id="googleMap">
+          <!-- Offline / loading fallback shown before map initialises -->
+          <div class="map-fallback">
+            <span class="map-fallback-icon">🗺️</span>
+            <span class="map-fallback-title">Cargando mapa…</span>
+            <span class="map-fallback-text">Iniciando vista de navegación</span>
           </div>
         </div>
+
+        <!-- Stats overlay — always visible on top of map -->
+        <div class="map-overlay-stats">
+          <div class="map-overlay-eta" id="mapEta">🚏 Próxima en — m</div>
+          <div class="map-overlay-grid">
+            <div class="route-stat">
+              <span class="route-stat-label">Parada</span>
+              <span class="route-stat-value accent" id="mapStopCounter">1 / 30</span>
+            </div>
+            <div class="route-stat">
+              <span class="route-stat-label">Tiempo</span>
+              <span class="route-stat-value" id="mapTimeInRoute">00:00:00</span>
+            </div>
+            <div class="route-stat">
+              <span class="route-stat-label">Velocidad</span>
+              <span class="route-stat-value" id="mapSpeed">— km/h</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- AUDIO PROGRESS STRIP (sibling) -->
@@ -197,6 +209,10 @@
 
   <!-- Google Cast SDK -->
   <script type="text/javascript" src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+
+  <!-- Runtime environment variables injected by Netlify build step.
+       Sets window.GOOGLE_MAPS_KEY — never committed to git. -->
+  <script src="env-config.js"></script>
 
   <!-- ES module entry point -->
   <script type="module" src="src/main.js"></script>

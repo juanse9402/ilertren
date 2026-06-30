@@ -753,67 +753,106 @@ body {
   font-weight: 500;
 }
 
-/* ===== RIGHT COLUMN MIDDLE: TRIP STATISTICS ===== */
-.stats-card {
+/* ===== RIGHT COLUMN MIDDLE: LIVE MAP CARD ===== */
+.cluster-card {
   grid-column: 2;
   grid-row: 2;
-  background: linear-gradient(180deg, var(--coal-800), var(--coal-900));
+  background: #171310;
   border: 1px solid var(--coal-700);
   border-radius: var(--r-lg);
-  padding: 24px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   height: 100%;
   min-height: 0;
   position: relative;
   overflow: hidden;
 }
 
-.stats-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  flex-shrink: 0;
+/* Google Maps renders inside this div — must fill the card completely */
+#googleMap {
+  flex: 1;
   width: 100%;
+  min-height: 0;
+  position: relative;
+  background: #171310;
+  display: flex;         /* centres the fallback message */
+  align-items: stretch;
 }
 
-.stats-title {
-  font-size: 11.5px;
-  font-weight: 700;
+/* The actual div google.maps.Map() creates needs 100% height */
+#googleMap > div {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ── Offline / error fallback ── */
+.map-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  min-height: 140px;
+  padding: 20px;
+  text-align: center;
+}
+
+.map-fallback-icon {
+  font-size: 32px;
+  opacity: .6;
+}
+
+.map-fallback-title {
+  font-family: 'Fraunces', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--paper-dim);
+}
+
+.map-fallback-text {
+  font-size: 12px;
   color: var(--paper-dimmer);
-  letter-spacing: 1.8px;
-  text-transform: uppercase;
+  line-height: 1.5;
 }
 
-.stats-eta {
-  font-size: 13px;
+/* ── Stats overlay — pinned at bottom of map ── */
+.map-overlay-stats {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background: linear-gradient(0deg, rgba(18,13,8,.97) 0%, rgba(18,13,8,.85) 60%, transparent 100%);
+  padding: 22px 16px 12px;
+  pointer-events: none;
+}
+
+.map-overlay-eta {
+  font-size: 12px;
   font-weight: 700;
   color: var(--paper);
   font-family: 'JetBrains Mono', monospace;
-  background: var(--coal-950);
-  padding: 8px 16px;
+  margin-bottom: 10px;
+  padding: 5px 12px;
+  background: rgba(18,13,8,.7);
   border-radius: 100px;
-  border: 1px solid var(--coal-600);
-  white-space: nowrap;
+  border: 1px solid rgba(61,51,36,.6);
+  display: inline-block;
 }
 
-.stats-grid {
+.map-overlay-grid {
   display: flex;
-  background: var(--coal-950);
-  border: 1px solid var(--coal-600);
-  border-radius: var(--r-md);
-  padding: 20px 12px;
-  width: 100%;
+  gap: 0;
 }
 
 .route-stat {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 0 16px;
+  gap: 3px;
+  padding: 0 12px;
   border-right: 1px solid rgba(237,230,214,.1);
 }
 
@@ -826,14 +865,15 @@ body {
 }
 
 .route-stat-label {
-  font-size: 11.5px;
+  font-size: 10px;
   color: var(--paper-dimmer);
   font-weight: 500;
-  letter-spacing: .2px;
+  letter-spacing: .4px;
+  text-transform: uppercase;
 }
 
 .route-stat-value {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--paper);
   font-family: 'JetBrains Mono', monospace;

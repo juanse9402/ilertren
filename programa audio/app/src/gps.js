@@ -172,6 +172,7 @@ function onPosition(position) {
       distance: Math.round(distance), 
       accuracy: Math.round(accuracy), 
       speed: position.coords.speed,
+      heading: position.coords.heading,   // degrees CW from north; null if unavailable
       latitude,
       longitude
     }

@@ -18,6 +18,7 @@ import { initAudio, playCurrentStop, stopAudio, unlockAudio, pauseAudio, resumeA
 import { startGPS, stopGPS, startRoute } from './gps.js';
 import { initEditor } from './editor.js';
 import { castVideo } from './cast.js';
+import { initMap, updateNextStop, clearNextStop } from './map.js';
 
 // ─── DOM References ───────────────────────────────────────────────────────────
 
@@ -210,7 +211,13 @@ function updateRouteUI() {
     el.mapStopCounter.textContent = `${currentStopIndex + 1} / ${total}`;
   }
 
-
+  // Update next stop marker on the live map
+  if (route[currentStopIndex]) {
+    const ns = route[currentStopIndex];
+    updateNextStop(ns.lat, ns.lon, ns.name);
+  } else {
+    clearNextStop();
+  }
 
   // Update progress strip label with active stop name
   const elAudioLabel = document.getElementById('audioLabel');
@@ -780,6 +787,12 @@ async function boot() {
       populateStopSelector(getState().route);
       updateRouteUI();
       logSuccess('Listo. Mantén pulsado "Iniciar Ruta" para comenzar.');
+
+      // 6. Lazy-init live map (only after route is ready, reduces billable loads)
+      const mapCard = document.getElementById('mapCard');
+      if (mapCard) {
+        initMap(mapCard);
+      }
     } else {
       if (el.holdLabel) {
         el.holdLabel.textContent = 'Sin ruta';
