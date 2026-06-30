@@ -1,0 +1,182 @@
+﻿[
+    {
+        "lon":  -2.673345,
+        "audio":  "01_Virgen Blanca.wav",
+        "name":  "Bienvenida",
+        "lat":  42.846635
+    },
+    {
+        "lon":  -2.673325,
+        "audio":  "02_Entrada a casco medieval.wav",
+        "name":  "Entrada Casco Medieval",
+        "lat":  42.847184
+    },
+    {
+        "lon":  -2.673641,
+        "audio":  "03_Correria.wav",
+        "name":  "Calle Correria",
+        "lat":  42.84855
+    },
+    {
+        "lon":  -2.673695,
+        "audio":  "04_Canton Carnicerias.wav",
+        "name":  "Canton Carnicerias",
+        "lat":  42.85009
+    },
+    {
+        "lon":  -2.672917,
+        "audio":  "05_Escoriaza-Esquivel.wav",
+        "name":  "Escoriaza-Esquivel",
+        "lat":  42.849791
+    },
+    {
+        "lon":  -2.672875,
+        "audio":  "07_Montehermoso.wav",
+        "name":  "Montehermoso",
+        "lat":  42.848723
+    },
+    {
+        "lon":  -2.672652,
+        "audio":  "08_Villa Suso y San Vicente.wav",
+        "name":  "Villa Suso y San Vicente",
+        "lat":  42.84799
+    },
+    {
+        "lon":  -2.672193,
+        "audio":  "09_Calle Santa Maria.wav",
+        "name":  "Calle Santa Maria",
+        "lat":  42.847982
+    },
+    {
+        "lon":  -2.672558,
+        "audio":  "10_Catedral Santa Maria.wav",
+        "name":  "Catedral Santa Maria",
+        "lat":  42.849872
+    },
+    {
+        "lon":  -2.673037,
+        "audio":  "11_Plaza Burulleria.wav",
+        "name":  "Plaza Burulleria",
+        "lat":  42.851216
+    },
+    {
+        "lon":  -2.673931,
+        "audio":  "12_Herreria.wav",
+        "name":  "Herreria",
+        "lat":  42.851365
+    },
+    {
+        "lon":  -2.67439,
+        "audio":  "06_Murales.wav",
+        "name":  "Murales",
+        "lat":  42.850357
+    },
+    {
+        "lon":  -2.674575,
+        "audio":  "13_Cantones.wav",
+        "name":  "Cantones",
+        "lat":  42.849254
+    },
+    {
+        "lon":  -2.674581,
+        "audio":  "14_San Pedro.wav",
+        "name":  "San Pedro",
+        "lat":  42.848296
+    },
+    {
+        "lon":  -2.675068,
+        "audio":  "15_Calles peatonales.wav",
+        "name":  "Calles peatonales",
+        "lat":  42.847905
+    },
+    {
+        "lon":  -2.674937,
+        "audio":  "16_Palacio Provincia.wav",
+        "name":  "Palacio Provincia",
+        "lat":  42.847225
+    },
+    {
+        "lon":  -2.676684,
+        "audio":  "17_Catedral nueva.wav",
+        "name":  "Catedral nueva",
+        "lat":  42.845954
+    },
+    {
+        "lon":  -2.67603,
+        "audio":  "18_Parque Florida.wav",
+        "name":  "Parque Florida",
+        "lat":  42.845421
+    },
+    {
+        "lon":  -2.678753,
+        "audio":  "19_Mikaela Portilla.wav",
+        "name":  "Mikaela Portilla",
+        "lat":  42.844279
+    },
+    {
+        "lon":  -2.681537,
+        "audio":  "20_Palacio justicia y Avda Gasteiz.wav",
+        "name":  "Palacio justicia y Avda Gasteiz",
+        "lat":  42.843304
+    },
+    {
+        "lon":  -2.68319,
+        "audio":  "21_El Prado.wav",
+        "name":  "El Prado",
+        "lat":  42.842377
+    },
+    {
+        "lon":  -2.682028,
+        "audio":  "22_Fray Francisco.wav",
+        "name":  "Fray Francisco",
+        "lat":  42.840772
+    },
+    {
+        "lon":  -2.67967,
+        "audio":  "23_Ajuria Enea.wav",
+        "name":  "Ajuria Enea",
+        "lat":  42.841199
+    },
+    {
+        "lon":  -2.678767,
+        "audio":  "24_Museo Bellas Artes.wav",
+        "name":  "Museo Bellas Artes",
+        "lat":  42.841477
+    },
+    {
+        "lon":  -2.683137,
+        "audio":  "25_Ciudad sostenible.wav",
+        "name":  "Ciudad sostenible",
+        "lat":  42.840701
+    },
+    {
+        "lon":  -2.680153,
+        "audio":  "26_Portal Castilla.wav",
+        "name":  "Portal Castilla",
+        "lat":  42.843434
+    },
+    {
+        "lon":  -2.678466,
+        "audio":  "27_Calle Magdalena.wav",
+        "name":  "Calle Magdalena",
+        "lat":  42.844536
+    },
+    {
+        "lon":  -2.678622,
+        "audio":  "28_Movilidad sostenible.wav",
+        "name":  "Movilidad sostenible",
+        "lat":  42.84635
+    },
+    {
+        "lon":  -2.676397,
+        "audio":  "29_Juntas y Parlamento.wav",
+        "name":  "Juntas y Parlamento",
+        "lat":  42.845739
+    },
+    {
+        "lon":  -2.674696,
+        "audio":  "30_Despedida.wav",
+        "name":  "Despedida",
+        "lat":  42.846015
+    }
+]

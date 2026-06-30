@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0A0907">
+  <meta name="description" content="RouteMaker GPS — Cabina Ferroviaria PRO">
+  <title>RouteMaker GPS</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <!-- Leaflet mapping library -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════
+       MAIN APP SHELL
+  ════════════════════════════════════════════ -->
+  <div class="device" id="appShell">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">RM</div>
+        <div>
+          <div class="brand-name">RouteMaker GPS</div>
+          <div class="brand-sub">Ilertren · Unidad 04</div>
+        </div>
+      </div>
+
+      <div class="status-cluster">
+        <span class="clock" id="currentTimeClock">12:00</span>
+        <div class="pill pill-net">📶 Offline · caché</div>
+        <div class="pill pill-gps-off" id="gpsPill">
+          <span class="dot" id="gpsDot"></span>
+          <span id="gpsStatus">GPS inactivo</span>
+          <button id="btnGpsRetry" class="btn-edit hidden" style="margin-left: 8px; padding: 2px 8px; font-size: 0.72rem;" aria-label="Reintentar activar GPS">Reintentar</button>
+          <span id="accuracyBadge" style="font-family:'JetBrains Mono'; margin-left: 5px;"></span>
+        </div>
+        <div class="top-bar-actions" style="display: flex; align-items: center; gap: 12px;">
+          <google-cast-launcher id="castButton" title="Conectar a Chromecast" style="display: inline-block; width: 28px; height: 28px; cursor: pointer; --connected-color: var(--ok); --disconnected-color: var(--paper-dimmer);"></google-cast-launcher>
+          <button id="btnOpenEditor" class="btn-edit" aria-label="Abrir editor de ruta">⚙ Editar ruta</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN GRID -->
+    <div class="main">
+
+      <!-- LEFT COLUMN: CONTROLS & LOGS -->
+      <div class="right-col">
+        <span class="hold-hint" id="holdHint">Mantén pulsado 3s</span>
+        
+        <!-- Circular Hold Button -->
+        <div class="hold-btn-wrap" id="holdBtn">
+          <svg class="ring" viewBox="0 0 158 158">
+            <circle class="hold-track" cx="79" cy="79" r="76"/>
+            <circle class="hold-fill" cx="79" cy="79" r="76" id="holdFill"/>
+          </svg>
+          <div class="hold-core" id="holdCore">
+            <!-- Play SVG Icon -->
+            <svg id="holdPlayIcon" viewBox="0 0 24 24" style="fill:var(--paper);"><path d="M8 5v14l11-7z"/></svg>
+            <span class="hold-core-label" id="holdLabel">Iniciar ruta</span>
+          </div>
+        </div>
+
+        <!-- Pause / Resume Controls (visible when started) -->
+        <div class="pause-row" id="pauseRow">
+          <button class="pause-btn" id="pauseBtn">
+            <svg id="pauseIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+            <span id="pauseLabel">Pausar ruta</span>
+          </button>
+        </div>
+
+        <!-- Squares Navigation Buttons -->
+        <div class="secondary-row">
+          <button class="secondary-btn" id="btnPlayLast" aria-label="Repetir anterior" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg>
+            Repetir anterior
+          </button>
+          <button class="secondary-btn" id="btnSkip" aria-label="Siguiente parada">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg>
+            Siguiente parada
+          </button>
+        </div>
+
+        <!-- Danger Row -->
+        <div class="secondary-row" style="height:auto;">
+          <button class="stop-btn" id="stopBtn" aria-label="Detener ruta">
+            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+            Detener ruta
+          </button>
+          <button class="danger-btn" id="btnRestart" aria-label="Reiniciar ruta completa">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg>
+            Reiniciar ruta completa
+          </button>
+        </div>
+
+        <!-- System Logs Card -->
+        <div class="log-card">
+          <div class="log-header">
+            <span class="log-title">Registro del sistema</span>
+            <span class="log-badge" id="logBadge">● Activo</span>
+          </div>
+          <div class="log-feed" id="logList" aria-live="polite" aria-relevant="additions">
+            <!-- Populated dynamically by logger.js -->
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: INFO & MAP -->
+      <div class="cluster-card">
+        <div class="eyebrow">Próxima parada · pulsa para cambiar</div>
+        
+        <!-- Stop Selector Dropdown -->
+        <div class="stop-selector-container">
+          <select id="stopSelector" class="stop-selector" aria-label="Seleccionar parada manualmente">
+            <option value="" disabled selected>Cargando paradas...</option>
+          </select>
+        </div>
+
+        <!-- Live Schematic Map -->
+        <div class="map-card">
+          <div class="map-header">
+            <span class="map-title">Recorrido en vivo</span>
+            <div class="map-eta" id="mapEta">🚏 Próxima en — m</div>
+          </div>
+
+          <!-- Leaflet interactive map container -->
+          <div id="map" style="width: 100%; height: 100%; flex: 1; min-height: 0; z-index: 1; background: #171310;"></div>
+
+          <!-- Map Stats Row -->
+          <div class="map-stats-row">
+            <div class="route-stat">
+              <span class="route-stat-label">Parada actual</span>
+              <span class="route-stat-value accent" id="mapStopCounter">1 / 30</span>
+            </div>
+            <div class="route-stat">
+              <span class="route-stat-label">Tiempo en ruta</span>
+              <span class="route-stat-value" id="mapTimeInRoute">00:00:00</span>
+            </div>
+            <div class="route-stat">
+              <span class="route-stat-label">Velocidad</span>
+              <span class="route-stat-value" id="mapSpeed">— km/h</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audio Progress Strip -->
+        <div class="progress-strip">
+          <div class="progress-strip-header">
+            <span class="audio-icon">♫</span>
+            <span class="progress-strip-label" id="audioLabel">Audio: Inactivo</span>
+            <span class="progress-strip-time"><span id="audioCurrentTime">0:00</span> / <span id="audioDuration">0:00</span></span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progressBar" style="width:0%"></div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       EDITOR SCREEN (full-screen overlay)
+  ════════════════════════════════════════════ -->
+  <div id="editorScreen" class="editor-overlay hidden" role="dialog" aria-modal="true" aria-label="Editor de ruta">
+    <header class="editor-header">
+      <h2 class="editor-title">Editor de ruta</h2>
+      <button id="btnCloseEditor" class="btn-edit" aria-label="Cerrar editor">✕ Cerrar</button>
+    </header>
+
+    <div class="editor-actions">
+      <button id="btnExport" class="btn-edit">📥 Exportar ruta</button>
+      <button id="btnAddStop" class="btn-edit" style="border-color: var(--brass); color: var(--brass);">+ Nueva parada</button>
+      <button id="btnResetRoute" class="btn-edit" style="border-color: var(--brick); color: var(--brick); margin-left: auto;">↺ Restablecer original</button>
+    </div>
+
+    <ul id="editorStopsList" class="editor-stops-list" aria-label="Lista de paradas">
+      <!-- Populated dynamically by editor.js -->
+    </ul>
+  </div>
+
+  <!-- Modal RGPD -->
+  <div id="rgpdModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rgpdTitle">
+    <div class="modal-card">
+      <h2 id="rgpdTitle" class="modal-title">Consentimiento de Ubicación</h2>
+      <p class="modal-text">Esta app usa tu ubicación GPS en tiempo real para guiarte por la ruta. Los datos de posición <strong>NO</strong> se envían a ningún servidor externo y se procesan únicamente en tu dispositivo.</p>
+      
+      <div class="rgpd-expandable">
+        <button id="btnRgpdToggle" class="btn-edit" aria-expanded="false" style="margin-top: 8px; width: auto; display: inline-flex;">ℹ️ Más información</button>
+        <div id="rgpdMoreInfo" class="rgpd-info-text hidden">
+          La geolocalización se utiliza únicamente para calcular la distancia a la siguiente parada del recorrido y reproducir automáticamente la guía de audio correspondiente en el momento adecuado. No recopilamos, compartimos, vendemos ni guardamos tu historial de ubicación en ninguna base de datos.
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 24px; width: 100%;">
+        <button id="btnRgpdAccept" class="btn-edit" style="width:100%; border-color: var(--ok); color: #8FBF8E; padding: 14px;">Entendido, activar GPS</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden audio element (autoplay policy requires user gesture first) -->
+  <audio id="audioPlayer" aria-hidden="true" preload="none"></audio>
+
+  <!-- Google Cast SDK -->
+  <script type="text/javascript" src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+
+  <!-- ES module entry point -->
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

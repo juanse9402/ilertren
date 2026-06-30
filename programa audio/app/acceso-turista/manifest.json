@@ -1,0 +1,10 @@
+{
+  "name": "Audio Tour Vitoria",
+  "short_name": "Audio Tour",
+  "description": "Guía de audio por GPS para turistas",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a"
+}

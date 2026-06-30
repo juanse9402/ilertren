@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import axios from 'axios';
 import { supabase } from '../../lib/supabaseClient';
 import type { Operation, Expense } from '../../types/database';
-import { 
-  Plus, Minus, CheckCircle, AlertCircle, History, Users, 
-  Coins, Loader, Clock, FileText, 
+import {
+  Plus, Minus, CheckCircle, AlertCircle, History, Users,
+  Coins, Loader, Clock, FileText,
   Calculator, Lock, X, Receipt, ArrowDownRight, Scale,
   Camera, Image as ImageIcon, RefreshCw
 } from 'lucide-react';
@@ -71,12 +71,12 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
     return d;
   }, []);
 
-  const todayOps = useMemo(() => 
+  const todayOps = useMemo(() =>
     (operations || []).filter(op => op.fecha === todayStr || (!op.fecha && new Date(op.created_at) >= todayStart)),
     [operations, todayStr, todayStart]
   );
 
-  const historicOps = useMemo(() => 
+  const historicOps = useMemo(() =>
     (operations || []).filter(op => op.fecha !== todayStr && (op.fecha || new Date(op.created_at) < todayStart)),
     [operations, todayStr, todayStart]
   );
@@ -299,8 +299,8 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
       setTimeout(() => setSubmitSuccess(false), 3000);
       fetchOperations();
     } else {
-      console.error("CRITICAL ERROR SAVING OPERATION:", error);
-      setToast({ msg: "Error al guardar: " + error.message, type: 'error' });
+      console.error("Error detallado de Supabase (Viaje):", error);
+      setToast({ msg: "Error al guardar: " + (error.message || "Error desconocido"), type: 'error' });
     }
     setSubmitting(false);
   };
@@ -335,7 +335,7 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
         const { data: { publicUrl } } = supabase.storage
           .from('expense-tickets')
           .getPublicUrl(fileName);
-        
+
         ticketUrl = publicUrl;
       } catch (err: any) {
         console.error("Error uploading ticket:", err);
@@ -346,9 +346,10 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
     const todayStr = new Date().toISOString().split('T')[0];
     const expenseData = {
       driver_id: profile.id,
-      amount: expenseAmount,
-      category: expenseCategory,
-      description: expenseDesc,
+      train_id: profile.train_id,
+      monto: expenseAmount,
+      categoria: expenseCategory,
+      descripcion: expenseDesc,
       fecha: todayStr,
       ticket_url: ticketUrl
     };
@@ -373,7 +374,8 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
       setTimeout(() => setSubmitSuccess(false), 3000);
       fetchExpenses();
     } else {
-      setToast({ msg: "Error al guardar gasto: " + error.message, type: 'error' });
+      console.error("Error detallado de Supabase (Gasto):", error);
+      setToast({ msg: "Error al guardar gasto: " + (error.message || "Error de red"), type: 'error' });
     }
     setExpenseSubmitting(false);
   };
@@ -393,9 +395,8 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className={`fixed top-24 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl backdrop-blur-md border ${
-                toast?.type === 'error' ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
-              }`}
+              className={`fixed top-24 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl backdrop-blur-md border ${toast?.type === 'error' ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
+                }`}
             >
               {toast?.type === 'error' ? <AlertCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
               <span className="font-bold text-sm">{toast?.msg || 'Operación realizada'}</span>
@@ -473,7 +474,7 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
                 Todos tus viajes de hoy han sido consolidados. El sistema de registro está bloqueado hasta mañana.
               </p>
               <div className="flex flex-wrap justify-center gap-3">
-                <button 
+                <button
                   onClick={() => {
                     fetchLastClosure();
                     setShowCierre(true);
@@ -482,7 +483,7 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
                 >
                   <FileText className="w-4 h-4" /> Ver Resumen Final
                 </button>
-                <button 
+                <button
                   onClick={() => { console.log('🔄 Refresco manual solicitado'); checkClosureStatus(); }}
                   className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest border border-blue-500/20 transition-all active:scale-95"
                 >
@@ -505,7 +506,7 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
             </div>
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => { 
+                onClick={() => {
                   fetchLastClosure();
                   setShowCierre(true);
                 }}
@@ -561,7 +562,7 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
                           <Minus className="w-5 h-5" />
                         </button>
                         <div className="flex-[1.5] text-center bg-blue-500/5 rounded-2xl py-4 border border-blue-500/10">
-                           <span className="text-3xl font-black italic text-blue-200">{adults}</span>
+                          <span className="text-3xl font-black italic text-blue-200">{adults}</span>
                         </div>
                         <button type="button" onClick={() => setAdults(adults + 1)} className="flex-1 sm:flex-none sm:w-14 h-14 bg-blue-600 hover:bg-blue-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20 active:scale-95 text-white transition-all">
                           <Plus className="w-5 h-5" />
@@ -577,7 +578,7 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
                           <Minus className="w-5 h-5" />
                         </button>
                         <div className="flex-[1.5] text-center bg-orange-500/5 rounded-2xl py-4 border border-orange-500/10">
-                           <span className="text-3xl font-black italic text-orange-200">{children}</span>
+                          <span className="text-3xl font-black italic text-orange-200">{children}</span>
                         </div>
                         <button type="button" onClick={() => setChildren(children + 1)} className="flex-1 sm:flex-none sm:w-14 h-14 bg-orange-600 hover:bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-600/20 active:scale-95 text-white transition-all">
                           <Plus className="w-5 h-5" />
@@ -593,7 +594,7 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
                           <Minus className="w-5 h-5" />
                         </button>
                         <div className="flex-[1.5] text-center bg-purple-500/5 rounded-2xl py-4 border border-purple-500/10">
-                           <span className="text-3xl font-black italic text-purple-200">{groups}</span>
+                          <span className="text-3xl font-black italic text-purple-200">{groups}</span>
                         </div>
                         <button type="button" onClick={() => setGroups(groups + 1)} className="flex-1 sm:flex-none sm:w-14 h-14 bg-purple-600 hover:bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-600/20 active:scale-95 text-white transition-all">
                           <Plus className="w-5 h-5" />
@@ -605,8 +606,8 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <div className="flex justify-between items-center mb-1">
-                       <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] ml-1">Recaudación Total (€)</label>
-                       <span className="text-[8px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-black uppercase tracking-widest">Base Autocalculada</span>
+                        <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] ml-1">Recaudación Total (€)</label>
+                        <span className="text-[8px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-black uppercase tracking-widest">Base Autocalculada</span>
                       </div>
                       <input
                         type="number" readOnly
@@ -615,21 +616,21 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
                       />
                     </div>
                     <div className="space-y-2">
-                       <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] ml-1">Resumen de Venta</label>
-                       <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
-                          <div className="flex justify-between items-center text-[10px]">
-                            <span className="text-blue-400 font-bold">Adultos:</span>
-                            <span className="text-white/60">{adults} x {PRECIO_ADULTO.toFixed(2)}€ = <span className="text-white font-bold">{(adults * PRECIO_ADULTO).toFixed(2)}€</span></span>
-                          </div>
-                          <div className="flex justify-between items-center text-[10px]">
-                            <span className="text-orange-400 font-bold">Infantil:</span>
-                            <span className="text-white/60">{children} x {PRECIO_INFANTIL.toFixed(2)}€ = <span className="text-white font-bold">{(children * PRECIO_INFANTIL).toFixed(2)}€</span></span>
-                          </div>
-                          <div className="flex justify-between items-center text-[10px]">
-                            <span className="text-purple-400 font-bold">Grupos:</span>
-                            <span className="text-white/60">{groups} x {PRECIO_GRUPO.toFixed(2)}€ = <span className="text-white font-bold">{(groups * PRECIO_GRUPO).toFixed(2)}€</span></span>
-                          </div>
-                       </div>
+                      <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] ml-1">Resumen de Venta</label>
+                      <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-blue-400 font-bold">Adultos:</span>
+                          <span className="text-white/60">{adults} x {PRECIO_ADULTO.toFixed(2)}€ = <span className="text-white font-bold">{(adults * PRECIO_ADULTO).toFixed(2)}€</span></span>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-orange-400 font-bold">Infantil:</span>
+                          <span className="text-white/60">{children} x {PRECIO_INFANTIL.toFixed(2)}€ = <span className="text-white font-bold">{(children * PRECIO_INFANTIL).toFixed(2)}€</span></span>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-purple-400 font-bold">Grupos:</span>
+                          <span className="text-white/60">{groups} x {PRECIO_GRUPO.toFixed(2)}€ = <span className="text-white font-bold">{(groups * PRECIO_GRUPO).toFixed(2)}€</span></span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -695,7 +696,7 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
                   </div>
                   <h3 className="text-sm font-bold text-white/40 uppercase tracking-widest">Registrar Gasto Operativo</h3>
                 </div>
-                
+
                 <form onSubmit={handleSubmitExpense} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-3">
@@ -711,7 +712,7 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
                     </div>
                     <div className="space-y-3">
                       <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] ml-1">Categoría</label>
-                      <select 
+                      <select
                         className="input-field py-4 bg-black/20 border-white/5 font-bold"
                         value={expenseCategory}
                         onChange={e => setExpenseCategory(e.target.value as any)}
@@ -722,7 +723,7 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
                       </select>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-3">
                       <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] ml-1">Descripción / Notas</label>
@@ -851,110 +852,110 @@ export function DriverDashboard({ profile }: DriverDashboardProps) {
         <AnimatePresence>
           {showConfirmCierre && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowConfirmCierre(false)} className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
-               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-sm glass-strong rounded-[2rem] border border-red-500/30 p-8 text-center space-y-6 relative z-10">
-                  <div className="w-20 h-20 bg-red-500/10 rounded-[2rem] flex items-center justify-center mx-auto border border-red-500/20 text-red-500">
-                    <Lock className="w-10 h-10" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold">¿Estás seguro?</h3>
-                    <p className="text-xs text-white/40 mt-2">
-                      Una vez cerrado <span className="text-red-400 font-bold">no podrás registrar más viajes</span> ni editar los datos de hoy.
-                    </p>
-                  </div>
-                  <div className="space-y-3">
-                    <button 
-                      onClick={async () => {
-                        setIsClosing(true);
-                        setSyncingSheets(true);
-                        const todayStr = new Date().toISOString().split('T')[0];
-                        
-                        try {
-                          // 1. Enviar a Google Sheets (Webhook) - Versión 7 (Anti-Duplicidad)
-                          const webhookUrl = "https://script.google.com/macros/s/AKfycby7xmQkP5f-tGB4dDEZSwsN5HHy8bODc7TeCHoMtpCOOHQMutUrYn3rZH056HjApP2zEw/exec";
-                          const payload = {
-                            fecha: todayStr,
-                            adult_start: ticketRanges.adultStart || 0,
-                            adult_end: ticketRanges.adultEnd || 0,
-                            infant_start: ticketRanges.infantStart || 0,
-                            infant_end: ticketRanges.infantEnd || 0,
-                            group_start: ticketRanges.groupStart || 0,
-                            group_end: ticketRanges.groupEnd || 0
-                          };
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowConfirmCierre(false)} className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-sm glass-strong rounded-[2rem] border border-red-500/30 p-8 text-center space-y-6 relative z-10">
+                <div className="w-20 h-20 bg-red-500/10 rounded-[2rem] flex items-center justify-center mx-auto border border-red-500/20 text-red-500">
+                  <Lock className="w-10 h-10" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">¿Estás seguro?</h3>
+                  <p className="text-xs text-white/40 mt-2">
+                    Una vez cerrado <span className="text-red-400 font-bold">no podrás registrar más viajes</span> ni editar los datos de hoy.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  <button
+                    onClick={async () => {
+                      setIsClosing(true);
+                      setSyncingSheets(true);
+                      const todayStr = new Date().toISOString().split('T')[0];
 
-                          console.log('🚀 Sincronizando con la central de datos...', payload);
+                      try {
+                        // 1. Enviar a Google Sheets (Webhook) - Versión 7 (Anti-Duplicidad)
+                        const webhookUrl = "https://script.google.com/macros/s/AKfycby7xmQkP5f-tGB4dDEZSwsN5HHy8bODc7TeCHoMtpCOOHQMutUrYn3rZH056HjApP2zEw/exec";
+                        const payload = {
+                          fecha: todayStr,
+                          adult_start: ticketRanges.adultStart || 0,
+                          adult_end: ticketRanges.adultEnd || 0,
+                          infant_start: ticketRanges.infantStart || 0,
+                          infant_end: ticketRanges.infantEnd || 0,
+                          group_start: ticketRanges.groupStart || 0,
+                          group_end: ticketRanges.groupEnd || 0
+                        };
 
-                          if (!navigator.onLine) {
-                            console.warn('📡 Offline: La sincronización Excel se reintentará más tarde');
-                            setToast({ msg: 'Sin conexión: Datos guardados en la central, Excel pendiente.', type: 'error' });
-                          } else {
-                            try {
-                              await fetch(webhookUrl, {
-                                method: 'POST',
-                                mode: 'no-cors',
-                                body: JSON.stringify(payload)
-                              });
-                              console.log('✅ Sincronización V7 completada con éxito');
-                            } catch (excelErr) {
-                              console.error('❌ Error enviando a Excel:', excelErr);
-                            }
+                        console.log('🚀 Sincronizando con la central de datos...', payload);
+
+                        if (!navigator.onLine) {
+                          console.warn('📡 Offline: La sincronización Excel se reintentará más tarde');
+                          setToast({ msg: 'Sin conexión: Datos guardados en la central, Excel pendiente.', type: 'error' });
+                        } else {
+                          try {
+                            await fetch(webhookUrl, {
+                              method: 'POST',
+                              mode: 'no-cors',
+                              body: JSON.stringify(payload)
+                            });
+                            console.log('✅ Sincronización V7 completada con éxito');
+                          } catch (excelErr) {
+                            console.error('❌ Error enviando a Excel:', excelErr);
                           }
+                        }
 
-                          // 2. Proceder a Supabase (Siempre, tras el intento de Excel)
-                          const { error: dbError } = await supabase.from('daily_closures').insert({
-                            driver_id: profile.id,
-                            fecha: todayStr,
-                            total_recaudado: todayRevenue,
-                            total_passengers: todayPassengers,
-                            total_gastos: todayExpenses,
-                            adult_start: ticketRanges.adultStart,
-                            adult_end: ticketRanges.adultEnd,
-                            infant_start: ticketRanges.infantStart,
-                            infant_end: ticketRanges.infantEnd,
-                            group_start: ticketRanges.groupStart,
-                            group_end: ticketRanges.groupEnd
-                          });
+                        // 2. Proceder a Supabase (Siempre, tras el intento de Excel)
+                        const { error: dbError } = await supabase.from('daily_closures').insert({
+                          driver_id: profile.id,
+                          fecha: todayStr,
+                          total_recaudado: todayRevenue,
+                          total_passengers: todayPassengers,
+                          total_gastos: todayExpenses,
+                          adult_start: ticketRanges.adultStart,
+                          adult_end: ticketRanges.adultEnd,
+                          infant_start: ticketRanges.infantStart,
+                          infant_end: ticketRanges.infantEnd,
+                          group_start: ticketRanges.groupStart,
+                          group_end: ticketRanges.groupEnd
+                        });
 
-                          if (dbError) throw dbError;
+                        if (dbError) throw dbError;
 
-                          setToast({ msg: 'Jornada Cerrada con Éxito', type: 'success' });
+                        setToast({ msg: 'Jornada Cerrada con Éxito', type: 'success' });
+                        setIsDayClosed(true);
+                        setShowConfirmCierre(false);
+                        setShowCierre(false);
+                      } catch (err: any) {
+                        console.error("Error en la sincronización:", err);
+                        if (err.code === '23505') {
+                          setToast({ msg: 'Ya cerraste hoy. Los datos están a salvo.', type: 'success' });
                           setIsDayClosed(true);
                           setShowConfirmCierre(false);
-                          setShowCierre(false);
-                        } catch (err: any) {
-                          console.error("Error en la sincronización:", err);
-                          if (err.code === '23505') {
-                            setToast({ msg: 'Ya cerraste hoy. Los datos están a salvo.', type: 'success' });
-                            setIsDayClosed(true);
-                            setShowConfirmCierre(false);
-                          } else {
-                            setToast({ msg: 'Error al cerrar jornada. Intenta de nuevo.', type: 'error' });
-                          }
-                        } finally {
-                          setIsClosing(false);
-                          setSyncingSheets(false);
+                        } else {
+                          setToast({ msg: 'Error al cerrar jornada. Intenta de nuevo.', type: 'error' });
                         }
-                      }}
-                      disabled={isClosing}
-                      className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-all uppercase tracking-widest text-xs disabled:opacity-50"
-                    >
-                      {isClosing ? 'Sincronizando con la central de datos...' : 'Sí, Cerrar Total del Día'}
-                    </button>
-                    <button 
-                      onClick={() => setShowConfirmCierre(false)}
-                      className="w-full py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl text-xs uppercase tracking-widest transition-all"
-                    >
-                      Volver
-                    </button>
-                  </div>
-               </motion.div>
+                      } finally {
+                        setIsClosing(false);
+                        setSyncingSheets(false);
+                      }
+                    }}
+                    disabled={isClosing}
+                    className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-all uppercase tracking-widest text-xs disabled:opacity-50"
+                  >
+                    {isClosing ? 'Sincronizando con la central de datos...' : 'Sí, Cerrar Total del Día'}
+                  </button>
+                  <button
+                    onClick={() => setShowConfirmCierre(false)}
+                    className="w-full py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl text-xs uppercase tracking-widest transition-all"
+                  >
+                    Volver
+                  </button>
+                </div>
+              </motion.div>
             </div>
           )}
         </AnimatePresence>
 
         {/* Quick Calculator Tool */}
-        <QuickCalculator 
-          isOpen={isCalculatorOpen} 
+        <QuickCalculator
+          isOpen={isCalculatorOpen}
           onClose={() => setIsCalculatorOpen(false)}
           onApplyResult={handleApplyCalculatorResult}
         />
@@ -1063,7 +1064,7 @@ function CierreReport({
   ticketRanges, setTicketRanges
 }: {
   ops: Operation[], driverName: string, totalRevenue: number, totalExpenses: number, netDaily: number,
-  totalAdults: number, totalChildren: number, totalGroups: number, avgRevenue: number, 
+  totalAdults: number, totalChildren: number, totalGroups: number, avgRevenue: number,
   isDayClosed: boolean, onClose: () => void, onConfirmClose: () => void,
   ticketRanges: any, setTicketRanges: (ranges: any) => void
 }) {
@@ -1111,7 +1112,7 @@ function CierreReport({
                   <Calculator className="w-4 h-4 text-emerald-400" />
                   <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Cálculo de Tickets Automatizado</p>
                 </div>
-                
+
                 {/* Cuadro de Verificación Categoría | Nº Inicial | Cantidad (Hoy) | Nº Final */}
                 <div className="overflow-hidden rounded-xl border border-white/5">
                   <table className="w-full text-left text-[9px]">
@@ -1147,15 +1148,15 @@ function CierreReport({
                 </div>
 
                 <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 flex items-center gap-3">
-                   <AlertCircle className="w-4 h-4 text-blue-400 shrink-0" />
-                   <p className="text-[8px] text-blue-200/60 uppercase leading-relaxed font-bold">
-                     Los números finales se han calculado automáticamente según tus registros de viaje de hoy. Verifícalos con tu rollo físico.
-                   </p>
+                  <AlertCircle className="w-4 h-4 text-blue-400 shrink-0" />
+                  <p className="text-[8px] text-blue-200/60 uppercase leading-relaxed font-bold">
+                    Los números finales se han calculado automáticamente según tus registros de viaje de hoy. Verifícalos con tu rollo físico.
+                  </p>
                 </div>
 
                 {/* Validation Info (Read-Only Version) */}
                 <div className="pt-2 border-t border-white/5">
-                   <div className="grid grid-cols-3 gap-2 py-2">
+                  <div className="grid grid-cols-3 gap-2 py-2">
                     <div className="text-center">
                       <p className="text-[8px] text-white/30 uppercase">Tickets A</p>
                       <p className="text-xs font-bold text-emerald-400">{totalAdults}</p>
@@ -1238,7 +1239,7 @@ function CierreReport({
         <button
           onClick={onConfirmClose}
           disabled={
-            ops.length === 0 || 
+            ops.length === 0 ||
             (ticketRanges.adultEnd === ticketRanges.adultStart && ticketRanges.infantEnd === ticketRanges.infantStart && ticketRanges.groupEnd === ticketRanges.groupStart && ops.length > 0 && false)
           }
           className="w-full py-4 mt-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 text-white font-bold rounded-2xl shadow-xl shadow-emerald-600/20 transition-all uppercase tracking-widest text-[10px]"
@@ -1247,11 +1248,11 @@ function CierreReport({
         </button>
       ) : (
         <div className="mt-4 p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex flex-col items-center gap-3 text-emerald-400 text-center">
-           <CheckCircle className="w-8 h-8" />
-           <div>
-             <span className="text-xs uppercase font-black tracking-widest block">Jornada ya cerrada</span>
-             <p className="text-[10px] text-white/40 mt-1">Si necesitas modificar algo, contacta al administrador.</p>
-           </div>
+          <CheckCircle className="w-8 h-8" />
+          <div>
+            <span className="text-xs uppercase font-black tracking-widest block">Jornada ya cerrada</span>
+            <p className="text-[10px] text-white/40 mt-1">Si necesitas modificar algo, contacta al administrador.</p>
+          </div>
         </div>
       )}
 
