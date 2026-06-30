@@ -199,6 +199,10 @@ const getTrainIcon = () => {
 };
 
 function initLeafletMap(route) {
+  if (!window.L) {
+    logWarn("Mapa en vivo no disponible (Librería Leaflet no cargada).");
+    return;
+  }
   if (!document.getElementById('map') || map || route.length === 0) return;
 
   const firstStop = route[0];
@@ -226,7 +230,7 @@ function initLeafletMap(route) {
 }
 
 function updateMapMarkersAndPath() {
-  if (!map) return;
+  if (!window.L || !map) return;
   const { route, currentStopIndex } = getState();
   
   // Remove old markers
@@ -268,7 +272,7 @@ function updateMapMarkersAndPath() {
 
 function updateMapVehicleMarker(index) {
   const { route } = getState();
-  if (map && vehicleMarker && route[index]) {
+  if (window.L && map && vehicleMarker && route[index]) {
     const stop = route[index];
     vehicleMarker.setLatLng([stop.lat, stop.lon]);
     map.panTo([stop.lat, stop.lon]);
