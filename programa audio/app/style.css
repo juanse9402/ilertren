@@ -777,7 +777,7 @@ body {
   width: 100%;
   min-height: 0;
   position: relative;
-  background: #171310;
+  background: #171310 url('assets/simulated-map.jpg') center/cover no-repeat;
   display: flex;         /* centres the fallback message */
   align-items: stretch;
 }
@@ -790,7 +790,7 @@ body {
 
 /* ── Offline / error fallback ── */
 .map-fallback {
-  display: flex;
+  display: none; /* Oculto para mostrar la imagen simulada */
   flex-direction: column;
   align-items: center;
   justify-content: center;

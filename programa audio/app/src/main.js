@@ -791,7 +791,7 @@ async function boot() {
       // 6. Lazy-init live map (only after route is ready, reduces billable loads)
       const mapCard = document.getElementById('mapCard');
       if (mapCard) {
-        initMap(mapCard);
+        // initMap(mapCard); // Desactivado temporalmente para mostrar mapa simulado
       }
     } else {
       if (el.holdLabel) {
