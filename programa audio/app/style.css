@@ -942,7 +942,7 @@ body {
 }
 
 .progress-track {
-  height: 9px;
+  height: 16px;
   background: var(--coal-950);
   border-radius: 100px;
   overflow: hidden;
