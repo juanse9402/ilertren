@@ -89,6 +89,27 @@ export function stopAmbient() {
 }
 
 /**
+ * Check if ambient track is playing
+ */
+export function isAmbientPlaying() {
+  return _ambientPlayer && !_ambientPlayer.paused;
+}
+
+/**
+ * Toggle ambient track manually
+ */
+export function toggleAmbient() {
+  if (!_ambientPlayer) return false;
+  if (_ambientPlayer.paused) {
+    _ambientPlayer.play().catch(e => console.warn('Toggle ambient error:', e));
+    return true;
+  } else {
+    _ambientPlayer.pause();
+    return false;
+  }
+}
+
+/**
  * Unlock audio playback on mobile devices.
  * Must be called from a user gesture (click/tap) handler.
  * Safe to call multiple times — only executes once.

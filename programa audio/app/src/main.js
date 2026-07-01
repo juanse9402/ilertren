@@ -14,7 +14,7 @@
 import { getState, setState, subscribe, resetTriggerLog, clearSavedProgress } from './state.js';
 import { initLogger, logInfo, logSuccess, logWarn, logError } from './logger.js';
 import { loadRoute } from './route.js';
-import { initAudio, playCurrentStop, stopAudio, unlockAudio, pauseAudio, resumeAudio, playAmbient, pauseAmbient, stopAmbient } from './audio.js';
+import { initAudio, playCurrentStop, stopAudio, unlockAudio, pauseAudio, resumeAudio, playAmbient, pauseAmbient, stopAmbient, toggleAmbient, isAmbientPlaying } from './audio.js';
 import { startGPS, stopGPS, startRoute } from './gps.js';
 import { initEditor } from './editor.js';
 import { castVideo } from './cast.js';
@@ -57,6 +57,8 @@ const el = {
   pauseLabel:   document.getElementById('pauseLabel'),
   stopBtn:      document.getElementById('stopBtn'),
   btnRestart:   document.getElementById('btnRestart'),
+  btnAmbientToggle: document.getElementById('btnAmbientToggle'),
+  ambientToggleLabel: document.getElementById('ambientToggleLabel'),
   btnPlayLast:  document.getElementById('btnPlayLast'),
   btnSkip:      document.getElementById('btnSkip'),
 
@@ -150,6 +152,12 @@ function populateStopSelector(route) {
   });
 }
 
+function updateAmbientToggleUI() {
+  if (el.ambientToggleLabel) {
+    el.ambientToggleLabel.textContent = isAmbientPlaying() ? 'Música ambiente: ON' : 'Música ambiente: OFF';
+  }
+}
+
 const Estados = { INACTIVO: 'inactivo', ACTIVO: 'activo', PAUSADO: 'pausado' };
 
 function aplicarEstado(estado) {
@@ -234,6 +242,8 @@ function updateRouteUI() {
 function updateGPSStatusUI(status, errorMsg) {
   if (!el.gpsPill || !el.gpsStatus || !el.gpsDot) return;
   
+  updateAmbientToggleUI();
+
   if (status === 'running') {
     el.gpsPill.className = 'pill pill-gps-active';
     el.gpsStatus.textContent = 'GPS activo';
@@ -536,6 +546,7 @@ function wireControls() {
       
       stopAudio();
       stopAmbient();
+      updateAmbientToggleUI();
       stopGPS();
       stopRouteTimer();
       routeTimeElapsedMs = 0;
@@ -578,6 +589,14 @@ function wireControls() {
       logInfo('Reintentando activar GPS...');
       el.btnGpsRetry.classList.add('hidden');
       startGPS();
+    });
+  }
+
+  // Ambient toggle button
+  if (el.btnAmbientToggle) {
+    el.btnAmbientToggle.addEventListener('click', () => {
+      toggleAmbient();
+      updateAmbientToggleUI();
     });
   }
 
