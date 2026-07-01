@@ -88,6 +88,33 @@ const el = {
   btnTheme: document.getElementById('btnTheme'),
 };
 
+// ─── Fullscreen API ───────────────────────────────────────────────────────────
+
+async function enterFullscreen() {
+  try {
+    const el = document.documentElement;
+    if (el.requestFullscreen) {
+      await el.requestFullscreen();
+    } else if (el.webkitRequestFullscreen) {
+      await el.webkitRequestFullscreen();
+    }
+  } catch (err) {
+    logWarn('Fullscreen no disponible: ' + err.message);
+  }
+}
+
+async function exitFullscreen() {
+  try {
+    if (document.exitFullscreen) {
+      await document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      await document.webkitExitFullscreen();
+    }
+  } catch (err) {
+    logWarn('Error saliendo de fullscreen: ' + err.message);
+  }
+}
+
 // ─── Wake Lock ────────────────────────────────────────────────────────────────
 
 let _wakeLock = null;
@@ -171,42 +198,44 @@ function updateRouteUI() {
   const { route, currentStopIndex } = getState();
   const total = route.length;
 
+  const elParadaActual = document.getElementById('paradaActualNombre');
+  const elParadaSiguiente = document.getElementById('paradaSiguienteNombre');
+
   if (total === 0) {
-    if (el.stopSelector) {
-      el.stopSelector.innerHTML = '<option value="empty" disabled selected>Sin ruta cargada</option>';
-      el.stopSelector.disabled = true;
-    }
+    if (elParadaActual) elParadaActual.textContent = 'Sin ruta cargada';
+    if (elParadaSiguiente) elParadaSiguiente.textContent = '—';
     if (el.stopCounter) el.stopCounter.textContent = '— / —';
     if (el.mapStopCounter) el.mapStopCounter.textContent = '— / —';
     return;
   }
 
-  if (el.stopSelector) {
-    el.stopSelector.disabled = false;
-  }
-
   if (currentStopIndex >= total) {
-    if (el.stopSelector) {
-      let optComp = el.stopSelector.querySelector('option[value="completed"]');
-      if (!optComp) {
-        optComp = document.createElement('option');
-        optComp.value = 'completed';
-        optComp.textContent = '¡Ruta completada!';
-        optComp.disabled = true;
-        el.stopSelector.appendChild(optComp);
-      }
-      el.stopSelector.value = 'completed';
-    }
+    if (elParadaActual) elParadaActual.textContent = '¡Ruta completada!';
+    if (elParadaSiguiente) elParadaSiguiente.textContent = '—';
     if (el.distanceValue) el.distanceValue.textContent = '—';
     if (el.stopCounter) el.stopCounter.textContent = `${total} / ${total}`;
     if (el.mapStopCounter) el.mapStopCounter.textContent = `${total} / ${total}`;
     return;
   }
 
-  if (el.stopSelector) {
-    const optComp = el.stopSelector.querySelector('option[value="completed"]');
-    if (optComp) optComp.remove();
-    el.stopSelector.value = currentStopIndex;
+  if (elParadaActual) {
+    if (currentStopIndex > 0 && route[currentStopIndex - 1]) {
+      const p = route[currentStopIndex - 1];
+      const numStr = String(currentStopIndex).padStart(2, '0');
+      elParadaActual.innerHTML = `<span class="stop-num">${numStr}.</span> ${p.name}`;
+    } else {
+      elParadaActual.textContent = 'Inactivo';
+    }
+  }
+
+  if (elParadaSiguiente) {
+    if (route[currentStopIndex]) {
+      const p = route[currentStopIndex];
+      const numStr = String(currentStopIndex + 1).padStart(2, '0');
+      elParadaSiguiente.textContent = `${numStr}. ${p.name}`;
+    } else {
+      elParadaSiguiente.textContent = '—';
+    }
   }
   
   if (el.stopCounter) {
@@ -368,6 +397,7 @@ async function executeRouteStart() {
   // Trigger GPS route tracking
   await startRoute();
   playAmbient();
+  await enterFullscreen();
 
   // Show pause/stop row
   if (el.pauseRow) el.pauseRow.classList.add('visible');
@@ -517,6 +547,7 @@ function wireControls() {
         if (el.pauseLabel) el.pauseLabel.textContent = 'Pausar ruta';
       }
 
+      exitFullscreen();
       aplicarEstado(Estados.INACTIVO);
     });
   }
@@ -694,6 +725,14 @@ function wireEditorEvents() {
   window.addEventListener('editor:open', () => {
     stopGPS();
     stopRouteTimer();
+    exitFullscreen();
+  });
+
+  window.addEventListener('editor:close', () => {
+    const { gpsStatus } = getState();
+    if (gpsStatus === 'running') {
+      enterFullscreen();
+    }
   });
 }
 
@@ -848,23 +887,23 @@ function initTheme() {
   if (!btn) return;
 
   // Restore last saved preference
-  const saved = localStorage.getItem('routemaker_theme');
+  const saved = localStorage.getItem('audio_ilertren_theme');
   if (saved === 'light') {
-    document.body.classList.add('light-mode');
+    document.documentElement.classList.add('light-mode');
     btn.textContent = '🌙';
     btn.setAttribute('aria-label', 'Cambiar a modo oscuro');
   }
 
   btn.addEventListener('click', () => {
-    const isLight = document.body.classList.toggle('light-mode');
+    const isLight = document.documentElement.classList.toggle('light-mode');
     if (isLight) {
       btn.textContent = '🌙';
       btn.setAttribute('aria-label', 'Cambiar a modo oscuro');
-      localStorage.setItem('routemaker_theme', 'light');
+      localStorage.setItem('audio_ilertren_theme', 'light');
     } else {
       btn.textContent = '\u2600\uFE0F'; // ☀️
       btn.setAttribute('aria-label', 'Cambiar a modo claro');
-      localStorage.setItem('routemaker_theme', 'dark');
+      localStorage.setItem('audio_ilertren_theme', 'dark');
     }
   });
 }

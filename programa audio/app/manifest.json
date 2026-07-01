@@ -3,7 +3,7 @@
   "short_name": "Ilertren",
   "description": "Guía de audio GPS para trenes turísticos Ilertren",
   "start_url": "./index.html",
-  "display": "standalone",
+  "display": "fullscreen",
   "orientation": "landscape",
   "background_color": "#120F0C",
   "theme_color": "#120F0C",

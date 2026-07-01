@@ -91,7 +91,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg>
             Repetir anterior
           </button>
-          <button class="secondary-btn" id="btnSkip" aria-label="Siguiente parada">
+          <button class="btn-siguiente" id="btnSkip" aria-label="Siguiente parada">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg>
             Siguiente parada
           </button>
@@ -121,13 +121,17 @@
         </div>
       </div>
 
-      <!-- STOPS SELECTOR (sibling) -->
+      <!-- STOPS HIERARCHY (sibling) -->
       <div class="stop-selector-wrap">
-        <div class="eyebrow">Próxima parada · pulsa para cambiar</div>
-        <div class="stop-selector-container">
-          <select id="stopSelector" class="stop-selector" aria-label="Seleccionar parada manualmente">
-            <option value="" disabled selected>Cargando paradas...</option>
-          </select>
+        <div class="stop-selector">
+          <div class="parada-actual-label">Reproduciendo ahora</div>
+          <div class="parada-actual-nombre" id="paradaActualNombre">
+            Inactivo
+          </div>
+          <div class="parada-siguiente-row">
+            <span class="parada-siguiente-label">A continuación:</span>
+            <span class="parada-siguiente-nombre" id="paradaSiguienteNombre">—</span>
+          </div>
         </div>
       </div>
 
