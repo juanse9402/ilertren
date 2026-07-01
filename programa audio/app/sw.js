@@ -9,7 +9,7 @@
  * Versioning: bump CACHE_VERSION to force re-cache on deploy.
  */
 
-const CACHE_VERSION = 'routemaker-v21';
+const CACHE_VERSION = 'routemaker-v22';
 
 const STATIC_ASSETS = [
   './',
@@ -28,8 +28,9 @@ const STATIC_ASSETS = [
   
   './src/map.js',
 
-  // Brand assets
+  // Brand & Audio assets
   './assets/logos/ilertren-logo.png',
+  './assets/ambientetren.mp3',
 
   // Tourist App Core Assets
   './acceso-turista/',
