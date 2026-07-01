@@ -18,7 +18,6 @@ import { initAudio, playCurrentStop, stopAudio, unlockAudio, pauseAudio, resumeA
 import { startGPS, stopGPS, startRoute } from './gps.js';
 import { initEditor } from './editor.js';
 import { castVideo } from './cast.js';
-import { initMap, updateNextStop, clearNextStop } from './map.js';
 
 // ─── DOM References ───────────────────────────────────────────────────────────
 
@@ -217,14 +216,6 @@ function updateRouteUI() {
   }
   if (el.mapStopCounter) {
     el.mapStopCounter.textContent = `${currentStopIndex + 1} / ${total}`;
-  }
-
-  // Update next stop marker on the live map
-  if (route[currentStopIndex]) {
-    const ns = route[currentStopIndex];
-    updateNextStop(ns.lat, ns.lon, ns.name);
-  } else {
-    clearNextStop();
   }
 
   // Update progress strip label with active stop name (which is the PREVIOUS index, since we incremented immediately on play)
