@@ -912,22 +912,46 @@ body {
 .progress-strip-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 11px;
   margin-bottom: 12px;
 }
 
+.audio-info-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.audio-label-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .audio-icon {
-  font-size: 20px;
+  font-size: 22px;
   flex-shrink: 0;
   color: var(--brass);
 }
 
 .progress-strip-label {
   font-family: 'Fraunces', serif;
-  font-size: 19px;
-  font-weight: 600;
+  font-size: 26px;
+  font-weight: 700;
   color: var(--paper);
-  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.progress-strip-next {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--paper-dimmer);
+  margin-left: 32px; /* Align text skipping the icon */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -939,6 +963,8 @@ body {
   color: var(--paper-dim);
   font-family: 'JetBrains Mono', monospace;
   white-space: nowrap;
+  align-self: flex-start;
+  margin-top: 6px;
 }
 
 .progress-track {

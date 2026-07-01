@@ -216,13 +216,23 @@ function updateRouteUI() {
     el.mapStopCounter.textContent = `${currentStopIndex + 1} / ${total}`;
   }
 
-  // Update progress strip label with active stop name (which is the PREVIOUS index, since we incremented immediately on play)
+  // Update progress strip labels with active stop and next stop
   const elAudioLabel = document.getElementById('audioLabel');
+  const elAudioNext = document.getElementById('audioNextLabel');
+  
   if (elAudioLabel) {
     if (currentStopIndex > 0 && route[currentStopIndex - 1]) {
-      elAudioLabel.textContent = `Audio: ${route[currentStopIndex - 1].name}`;
+      elAudioLabel.textContent = `${route[currentStopIndex - 1].name}`;
     } else {
-      elAudioLabel.textContent = 'Audio: Inactivo';
+      elAudioLabel.textContent = 'Inactivo';
+    }
+  }
+
+  if (elAudioNext) {
+    if (route[currentStopIndex]) {
+      elAudioNext.textContent = `Siguiente: ${route[currentStopIndex].name}`;
+    } else {
+      elAudioNext.textContent = 'Siguiente: —';
     }
   }
 
