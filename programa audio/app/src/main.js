@@ -14,7 +14,7 @@
 import { getState, setState, subscribe, resetTriggerLog, clearSavedProgress } from './state.js';
 import { initLogger, logInfo, logSuccess, logWarn, logError } from './logger.js';
 import { loadRoute } from './route.js';
-import { initAudio, playCurrentStop, stopAudio, unlockAudio, pauseAudio, resumeAudio } from './audio.js';
+import { initAudio, playCurrentStop, stopAudio, unlockAudio, pauseAudio, resumeAudio, playAmbient, pauseAmbient, stopAmbient } from './audio.js';
 import { startGPS, stopGPS, startRoute } from './gps.js';
 import { initEditor } from './editor.js';
 import { castVideo } from './cast.js';
@@ -354,6 +354,7 @@ async function executeRouteStart() {
 
   // Trigger GPS route tracking
   await startRoute();
+  playAmbient();
   await requestWakeLock();
 
   // Show pause/stop row
@@ -451,6 +452,7 @@ function wireControls() {
         // Geolocation & Audio Pause actions
         stopGPS();
         pauseAudio();
+        pauseAmbient();
         stopRouteTimer();
         if (el.holdCore) el.holdCore.classList.remove('running'); // pausa: quitar pulso
       } else {
@@ -464,6 +466,7 @@ function wireControls() {
         // Geolocation & Audio Resume actions
         startGPS();
         resumeAudio();
+        playAmbient();
         startRouteTimer();
         if (el.holdCore) el.holdCore.classList.add('running'); // reanudado: volver pulso
       }
@@ -479,6 +482,7 @@ function wireControls() {
       // Call GPS & Audio stop actions
       stopGPS();
       stopAudio();
+      stopAmbient();
       stopRouteTimer();
 
       // Reset stopwatch
@@ -531,6 +535,7 @@ function wireControls() {
       if (!confirm('¿Reiniciar la ruta completa desde el principio?')) return;
       
       stopAudio();
+      stopAmbient();
       stopGPS();
       stopRouteTimer();
       routeTimeElapsedMs = 0;

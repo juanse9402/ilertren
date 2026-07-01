@@ -17,6 +17,7 @@ import { castVideo } from './cast.js';
 
 const AUDIO_PREFIX = 'indexeddb_';
 let _player = null;
+let _ambientPlayer = null;
 let _currentObjectUrl = null;
 let _unlocked = false;
 
@@ -30,10 +31,15 @@ const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAI
 export function initAudio(el) {
   _player = el;
 
+  _ambientPlayer = new Audio('assets/ambientetren.wav');
+  _ambientPlayer.loop = true;
+  _ambientPlayer.volume = 0.15; // 15% base volume
+
   _player.addEventListener('ended', () => {
     _revokeCurrentUrl();
     setState({ audioStatus: 'idle' });
     logInfo('Audio finalizado.');
+    if (_ambientPlayer) _ambientPlayer.volume = 0.15; // Restore ambient volume
   });
 
   _player.addEventListener('error', () => {
@@ -50,7 +56,36 @@ export function initAudio(el) {
     logError(`Error de reproducción: ${_player.error?.message ?? 'desconocido'}`);
     // Auto-recover to idle so GPS can continue
     setState({ audioStatus: 'idle' });
+    if (_ambientPlayer) _ambientPlayer.volume = 0.15; // Restore ambient volume
   });
+}
+
+/**
+ * Play ambient track
+ */
+export function playAmbient() {
+  if (_ambientPlayer) {
+    _ambientPlayer.play().catch(e => logWarn(`No se pudo iniciar ambiente: ${e.message}`));
+  }
+}
+
+/**
+ * Pause ambient track
+ */
+export function pauseAmbient() {
+  if (_ambientPlayer) {
+    _ambientPlayer.pause();
+  }
+}
+
+/**
+ * Stop ambient track completely
+ */
+export function stopAmbient() {
+  if (_ambientPlayer) {
+    _ambientPlayer.pause();
+    _ambientPlayer.currentTime = 0;
+  }
 }
 
 /**
@@ -66,6 +101,15 @@ export async function unlockAudio() {
     _player.pause();
     _player.src = '';
     _unlocked = true;
+
+    // Also unlock ambient player if needed
+    if (_ambientPlayer) {
+      const prevVol = _ambientPlayer.volume;
+      _ambientPlayer.volume = 0;
+      await _ambientPlayer.play();
+      _ambientPlayer.pause();
+      _ambientPlayer.volume = prevVol;
+    }
   } catch {
     // Silently fail — will retry on next user gesture
   }
@@ -129,6 +173,11 @@ export async function playCurrentStop() {
 
   setState({ audioStatus: 'playing' });
 
+  // Duck ambient volume
+  if (_ambientPlayer) {
+    _ambientPlayer.volume = 0.05; // 5% ducked volume
+  }
+
   // Safety net: ensure audio is unlocked on mobile
   if (!_unlocked) await unlockAudio();
 
@@ -176,31 +225,37 @@ export async function playCurrentStop() {
  * Stop audio immediately and reset.
  */
 export function stopAudio() {
-  if (!_player) return;
-  _player.pause();
-  _player.src = '';
+  if (_player) {
+    _player.pause();
+    _player.currentTime = 0;
+  }
   _revokeCurrentUrl();
   setState({ audioStatus: 'idle' });
+  if (_ambientPlayer) _ambientPlayer.volume = 0.15; // Restore ambient volume
 }
 
 /**
  * Pause audio playback in progress.
  */
 export function pauseAudio() {
-  if (!_player) return;
-  _player.pause();
-  setState({ audioStatus: 'paused' });
+  if (_player && !_player.paused) {
+    _player.pause();
+    setState({ audioStatus: 'paused' });
+    if (_ambientPlayer) _ambientPlayer.volume = 0.15; // Restore ambient volume while paused
+  }
 }
-
 /**
  * Resume paused audio playback.
  */
 export function resumeAudio() {
-  if (!_player) return;
-  if (getState().audioStatus === 'paused') {
-    _player.play().catch(err => {
-      console.warn('Failed to resume audio:', err);
+  if (_player && _player.paused && _player.src) {
+    if (_ambientPlayer) _ambientPlayer.volume = 0.05; // Duck again before resuming
+    _player.play().then(() => {
+      setState({ audioStatus: 'playing' });
+    }).catch(err => {
+      logError(`Error reanudando audio: ${err.message}`);
+      setState({ audioStatus: 'error' });
+      if (_ambientPlayer) _ambientPlayer.volume = 0.15; // Restore on error
     });
-    setState({ audioStatus: 'playing' });
   }
 }
