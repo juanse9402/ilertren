@@ -536,6 +536,18 @@ body {
   flex-shrink: 0;
 }
 
+/* Siguiente parada button - specific styles for emphasis */
+#btnSkip {
+  flex: 1.6; /* Takes more space than the play-last button */
+  font-size: 15px;
+  font-weight: 700;
+  background: var(--coal-700); /* slightly brighter by default */
+}
+#btnSkip svg {
+  width: 28px;
+  height: 28px;
+}
+
 /* danger reset btn */
 .danger-btn {
   flex: 1;
