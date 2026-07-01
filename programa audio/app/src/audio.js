@@ -31,7 +31,7 @@ const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAI
 export function initAudio(el) {
   _player = el;
 
-  _ambientPlayer = new Audio('assets/ambientetren.wav');
+  _ambientPlayer = new Audio('assets/ambientetren.mp3');
   _ambientPlayer.loop = true;
   _ambientPlayer.volume = 0.15; // 15% base volume
 
