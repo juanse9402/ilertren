@@ -227,10 +227,14 @@ function updateRouteUI() {
     clearNextStop();
   }
 
-  // Update progress strip label with active stop name
+  // Update progress strip label with active stop name (which is the PREVIOUS index, since we incremented immediately on play)
   const elAudioLabel = document.getElementById('audioLabel');
-  if (elAudioLabel && route[currentStopIndex]) {
-    elAudioLabel.textContent = `Audio: ${route[currentStopIndex].name}`;
+  if (elAudioLabel) {
+    if (currentStopIndex > 0 && route[currentStopIndex - 1]) {
+      elAudioLabel.textContent = `Audio: ${route[currentStopIndex - 1].name}`;
+    } else {
+      elAudioLabel.textContent = 'Audio: Inactivo';
+    }
   }
 
   if (el.btnPlayLast) {
