@@ -116,8 +116,7 @@ async function releaseWakeLock() {
 // Re-acquire wake lock when page becomes visible again (required by spec)
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible') {
-    const { gpsStatus } = getState();
-    if (gpsStatus === 'running' && !_wakeLock) {
+    if (!_wakeLock) {
       await requestWakeLock();
     }
   }
@@ -201,7 +200,6 @@ function updateRouteUI() {
     if (el.distanceValue) el.distanceValue.textContent = '—';
     if (el.stopCounter) el.stopCounter.textContent = `${total} / ${total}`;
     if (el.mapStopCounter) el.mapStopCounter.textContent = `${total} / ${total}`;
-    releaseWakeLock();
     return;
   }
 
@@ -360,7 +358,6 @@ async function executeRouteStart() {
   // Trigger GPS route tracking
   await startRoute();
   playAmbient();
-  await requestWakeLock();
 
   // Show pause/stop row
   if (el.pauseRow) el.pauseRow.classList.add('visible');
@@ -550,7 +547,6 @@ function wireControls() {
       setState({ currentStopIndex: 0 });
       resetTriggerLog();
       clearSavedProgress();
-      releaseWakeLock();
       
       // Fully reset visual elements
       holdReset();
@@ -687,7 +683,6 @@ function wireEditorEvents() {
   // Pause GPS and release wake lock when editor opens
   window.addEventListener('editor:open', () => {
     stopGPS();
-    releaseWakeLock();
     stopRouteTimer();
   });
 }
@@ -800,7 +795,10 @@ async function boot() {
     // Set initial button states
     aplicarEstado(Estados.INACTIVO);
 
-    // 5. Load route
+    // 5. WakeLock permanente (la pantalla no se apaga nunca mientras la app esté abierta)
+    await requestWakeLock();
+
+    // 6. Load route
     const loaded = await loadRoute();
     if (loaded) {
       populateStopSelector(getState().route);
