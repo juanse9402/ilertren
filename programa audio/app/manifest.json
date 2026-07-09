@@ -1,27 +1,25 @@
 {
   "name": "Audio Ilertren",
-  "short_name": "Ilertren",
+  "short_name": "Audio Ilertren",
   "description": "Guía de audio GPS para trenes turísticos Ilertren",
-  "start_url": "./index.html",
   "display": "fullscreen",
   "orientation": "landscape",
+  "start_url": "/",
+  "scope": "/",
   "background_color": "#120F0C",
   "theme_color": "#120F0C",
   "icons": [
     {
       "src": "assets/logos/ilertren-logo.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icons/icon-512.png",
+      "src": "assets/logos/ilertren-logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

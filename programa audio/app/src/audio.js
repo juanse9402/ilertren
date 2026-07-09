@@ -21,8 +21,81 @@ let _ambientPlayer = null;
 let _currentObjectUrl = null;
 let _unlocked = false;
 
+// Web Audio API context and nodes for iOS volume control bypass
+let _audioCtx = null;
+let _ambientSource = null;
+let _ambientGainNode = null;
+
+function initAmbientWebAudio() {
+  if (!_ambientPlayer) return;
+  if (_ambientGainNode) return; // already initialized
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    _audioCtx = new AudioContextClass();
+    _ambientSource = _audioCtx.createMediaElementSource(_ambientPlayer);
+    _ambientGainNode = _audioCtx.createGain();
+    _ambientSource.connect(_ambientGainNode);
+    _ambientGainNode.connect(_audioCtx.destination);
+    _ambientGainNode.gain.setValueAtTime(AMBIENT_VOLUME_NORMAL, _audioCtx.currentTime);
+  } catch (err) {
+    console.error('Error initializing Web Audio API for ambient:', err);
+  }
+}
+
 // Minimal valid WAV (silence) for iOS/Android audio unlock
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+
+const AMBIENT_VOLUME_NORMAL = 0.35;
+const AMBIENT_VOLUME_DUCKED = 0.08;
+const FADE_DOWN_MS = 600;
+const FADE_UP_MS = 1000;
+
+let _fadeInterval = null;
+
+function fadeVolume(audioEl, targetVol, durationMs) {
+  // If fading the ambient player and we have Web Audio API active, fade the GainNode instead of element volume (fixes iOS read-only volume limitation)
+  if (audioEl === _ambientPlayer && _ambientGainNode && _audioCtx) {
+    if (_audioCtx.state === 'suspended') {
+      _audioCtx.resume();
+    }
+    const startVol = _ambientGainNode.gain.value;
+    const steps = 40;
+    const stepMs = durationMs / steps;
+    const stepSize = (targetVol - startVol) / steps;
+    let i = 0;
+    if (_fadeInterval) clearInterval(_fadeInterval);
+    _fadeInterval = setInterval(() => {
+      i++;
+      _ambientGainNode.gain.setValueAtTime(
+        Math.max(0, Math.min(1, startVol + stepSize * i)),
+        _audioCtx.currentTime
+      );
+      if (i >= steps) {
+        _ambientGainNode.gain.setValueAtTime(targetVol, _audioCtx.currentTime);
+        clearInterval(_fadeInterval);
+        _fadeInterval = null;
+      }
+    }, stepMs);
+    return;
+  }
+
+  const startVol = audioEl.volume;
+  const steps = 40;
+  const stepMs = durationMs / steps;
+  const stepSize = (targetVol - startVol) / steps;
+  let i = 0;
+  if (_fadeInterval) clearInterval(_fadeInterval);
+  _fadeInterval = setInterval(() => {
+    i++;
+    audioEl.volume = Math.max(0, Math.min(1, startVol + stepSize * i));
+    if (i >= steps) {
+      audioEl.volume = targetVol;
+      clearInterval(_fadeInterval);
+      _fadeInterval = null;
+    }
+  }, stepMs);
+}
 
 /**
  * Bind to the <audio> DOM element.
@@ -33,13 +106,34 @@ export function initAudio(el) {
 
   _ambientPlayer = new Audio('assets/ambientetren.mp3');
   _ambientPlayer.loop = true;
-  _ambientPlayer.volume = 0.15; // 15% base volume
+  _ambientPlayer.volume = AMBIENT_VOLUME_NORMAL;
+
+  _player.addEventListener('play', () => {
+    if (_ambientPlayer && !_ambientPlayer.paused) {
+      fadeVolume(_ambientPlayer, AMBIENT_VOLUME_DUCKED, FADE_DOWN_MS);
+    }
+  });
 
   _player.addEventListener('ended', () => {
     _revokeCurrentUrl();
     setState({ audioStatus: 'idle' });
     logInfo('Audio finalizado.');
-    if (_ambientPlayer) _ambientPlayer.volume = 0.15; // Restore ambient volume
+    if (_ambientPlayer && !_ambientPlayer.paused) {
+      fadeVolume(_ambientPlayer, AMBIENT_VOLUME_NORMAL, FADE_UP_MS);
+    }
+
+    const { route, currentStopIndex } = getState();
+    const finishedStop = route[currentStopIndex - 1];
+    if (finishedStop && finishedStop.autoNext && currentStopIndex < route.length) {
+      logInfo(`Empalmando automáticamente con la siguiente parada...`);
+      setTimeout(() => playCurrentStop(), 1000); // 1s de respiro antes del siguiente
+    }
+  });
+
+  _player.addEventListener('pause', () => {
+    if (_ambientPlayer && !_ambientPlayer.paused && _player.ended === false) {
+      fadeVolume(_ambientPlayer, AMBIENT_VOLUME_NORMAL, FADE_UP_MS);
+    }
   });
 
   _player.addEventListener('error', () => {
@@ -56,16 +150,46 @@ export function initAudio(el) {
     logError(`Error de reproducción: ${_player.error?.message ?? 'desconocido'}`);
     // Auto-recover to idle so GPS can continue
     setState({ audioStatus: 'idle' });
-    if (_ambientPlayer) _ambientPlayer.volume = 0.15; // Restore ambient volume
+    if (_ambientPlayer && !_ambientPlayer.paused) {
+      fadeVolume(_ambientPlayer, AMBIENT_VOLUME_NORMAL, FADE_UP_MS);
+    }
   });
 }
+
+let _ambientWakeLock = null;
+
+async function acquireAmbientWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    if (_ambientWakeLock === null) {
+      _ambientWakeLock = await navigator.wakeLock.request('screen');
+    }
+  } catch (err) {
+    logWarn(`Wake Lock ambiente no disponible: ${err.message}`);
+  }
+}
+
+async function releaseAmbientWakeLock() {
+  if (_ambientWakeLock !== null) {
+    try { await _ambientWakeLock.release(); } catch(_) {}
+    _ambientWakeLock = null;
+  }
+}
+
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && isAmbientPlaying()) {
+    await acquireAmbientWakeLock();
+  }
+});
 
 /**
  * Play ambient track
  */
 export function playAmbient() {
   if (_ambientPlayer) {
-    _ambientPlayer.play().catch(e => logWarn(`No se pudo iniciar ambiente: ${e.message}`));
+    _ambientPlayer.play()
+      .then(() => acquireAmbientWakeLock())
+      .catch(e => logWarn(`No se pudo iniciar ambiente: ${e.message}`));
   }
 }
 
@@ -75,6 +199,7 @@ export function playAmbient() {
 export function pauseAmbient() {
   if (_ambientPlayer) {
     _ambientPlayer.pause();
+    releaseAmbientWakeLock();
   }
 }
 
@@ -85,6 +210,7 @@ export function stopAmbient() {
   if (_ambientPlayer) {
     _ambientPlayer.pause();
     _ambientPlayer.currentTime = 0;
+    releaseAmbientWakeLock();
   }
 }
 
@@ -101,10 +227,13 @@ export function isAmbientPlaying() {
 export function toggleAmbient() {
   if (!_ambientPlayer) return false;
   if (_ambientPlayer.paused) {
-    _ambientPlayer.play().catch(e => console.warn('Toggle ambient error:', e));
+    _ambientPlayer.play()
+      .then(() => acquireAmbientWakeLock())
+      .catch(e => console.warn('Toggle ambient error:', e));
     return true;
   } else {
     _ambientPlayer.pause();
+    releaseAmbientWakeLock();
     return false;
   }
 }
@@ -117,6 +246,12 @@ export function toggleAmbient() {
 export async function unlockAudio() {
   if (_unlocked || !_player) return;
   try {
+    // Initialize Web Audio API to bypass iOS volume fading limitations
+    initAmbientWebAudio();
+    if (_audioCtx && _audioCtx.state === 'suspended') {
+      await _audioCtx.resume();
+    }
+
     _player.src = SILENT_WAV;
     await _player.play();
     _player.pause();
@@ -131,8 +266,8 @@ export async function unlockAudio() {
       _ambientPlayer.pause();
       _ambientPlayer.volume = prevVol;
     }
-  } catch {
-    // Silently fail — will retry on next user gesture
+  } catch (err) {
+    console.warn('Silent unlock failed:', err);
   }
 }
 
@@ -194,11 +329,6 @@ export async function playCurrentStop() {
 
   setState({ audioStatus: 'playing' });
 
-  // Duck ambient volume
-  if (_ambientPlayer) {
-    _ambientPlayer.volume = 0.05; // 5% ducked volume
-  }
-
   // Safety net: ensure audio is unlocked on mobile
   if (!_unlocked) await unlockAudio();
 
@@ -252,7 +382,6 @@ export function stopAudio() {
   }
   _revokeCurrentUrl();
   setState({ audioStatus: 'idle' });
-  if (_ambientPlayer) _ambientPlayer.volume = 0.15; // Restore ambient volume
 }
 
 /**
@@ -262,7 +391,6 @@ export function pauseAudio() {
   if (_player && !_player.paused) {
     _player.pause();
     setState({ audioStatus: 'paused' });
-    if (_ambientPlayer) _ambientPlayer.volume = 0.15; // Restore ambient volume while paused
   }
 }
 /**
@@ -270,13 +398,11 @@ export function pauseAudio() {
  */
 export function resumeAudio() {
   if (_player && _player.paused && _player.src) {
-    if (_ambientPlayer) _ambientPlayer.volume = 0.05; // Duck again before resuming
     _player.play().then(() => {
       setState({ audioStatus: 'playing' });
     }).catch(err => {
       logError(`Error reanudando audio: ${err.message}`);
       setState({ audioStatus: 'error' });
-      if (_ambientPlayer) _ambientPlayer.volume = 0.15; // Restore on error
     });
   }
 }

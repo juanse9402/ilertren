@@ -18,12 +18,107 @@ let _els = {};
 export function initEditor(elements) {
   _els = elements;
 
-  _els.btnOpen.addEventListener('click', openEditor);
+  const pinModal = document.getElementById('pinModal');
+  const pinInput = document.getElementById('pinInput');
+  const pinConfirm = document.getElementById('pinConfirm');
+  const pinCancel = document.getElementById('pinCancel');
+  const pinError = document.getElementById('pinError');
+
+  _els.btnOpen.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (pinModal) {
+      pinModal.classList.remove('hidden');
+      if (pinInput) {
+        pinInput.value = '';
+      }
+      if (pinError) {
+        pinError.style.display = 'none';
+      }
+      setTimeout(() => {
+        if (pinInput) pinInput.focus();
+      }, 100);
+    } else {
+      openEditor();
+    }
+  });
+
+  if (pinConfirm) {
+    pinConfirm.addEventListener('click', () => {
+      const pin = pinInput ? pinInput.value : '';
+      const ADMIN_PIN = window.ADMIN_PIN || '1234';
+      if (pin === ADMIN_PIN) {
+        if (pinModal) pinModal.classList.add('hidden');
+        openEditor();
+      } else {
+        if (pinError) pinError.style.display = 'block';
+        if (pinInput) pinInput.value = '';
+        if ('vibrate' in navigator) navigator.vibrate([100, 50, 100]);
+      }
+    });
+  }
+
+  if (pinCancel) {
+    pinCancel.addEventListener('click', () => {
+      if (pinModal) pinModal.classList.add('hidden');
+    });
+  }
+
+  if (pinInput) {
+    pinInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        if (pinConfirm) pinConfirm.click();
+      }
+    });
+  }
+
   _els.btnClose.addEventListener('click', closeEditor);
   _els.btnAdd.addEventListener('click', addStop);
   _els.btnExport.addEventListener('click', exportRoute);
   if (_els.btnReset) {
     _els.btnReset.addEventListener('click', resetRoute);
+  }
+
+  const btnEditorGetGps = document.getElementById('btnEditorGetGps');
+  const btnEditorOpenMap = document.getElementById('btnEditorOpenMap');
+  const editorGpsCoords = document.getElementById('editorGpsCoords');
+
+  if (btnEditorGetGps) {
+    btnEditorGetGps.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        logError('GPS no disponible en este dispositivo.');
+        if (editorGpsCoords) editorGpsCoords.textContent = 'GPS no disponible';
+        return;
+      }
+
+      if (editorGpsCoords) editorGpsCoords.textContent = 'Buscando señal...';
+      btnEditorGetGps.disabled = true;
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          btnEditorGetGps.disabled = false;
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const acc = Math.round(pos.coords.accuracy);
+
+          if (editorGpsCoords) {
+            editorGpsCoords.textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)} (±${acc}m)`;
+          }
+
+          if (btnEditorOpenMap) {
+            btnEditorOpenMap.href = `https://www.google.com/maps?q=${lat},${lon}`;
+            btnEditorOpenMap.classList.remove('hidden');
+          }
+          logSuccess(`Ubicación actual obtenida: ${lat.toFixed(6)}, ${lon.toFixed(6)}`);
+        },
+        (err) => {
+          btnEditorGetGps.disabled = false;
+          logError(`Error obteniendo ubicación: ${err.message}`);
+          if (editorGpsCoords) editorGpsCoords.textContent = 'Error al obtener GPS';
+        },
+        { enableHighAccuracy: true, timeout: 10_000 }
+      );
+    });
   }
 }
 
@@ -32,6 +127,15 @@ function openEditor() {
   window.dispatchEvent(new CustomEvent('editor:open'));
   setState({ editorOpen: true });
   _els.screen.classList.remove('hidden');
+
+  const editorGpsCoords = document.getElementById('editorGpsCoords');
+  const btnEditorOpenMap = document.getElementById('btnEditorOpenMap');
+  if (editorGpsCoords) editorGpsCoords.textContent = 'No consultada';
+  if (btnEditorOpenMap) {
+    btnEditorOpenMap.classList.add('hidden');
+    btnEditorOpenMap.href = '#';
+  }
+
   render();
   logInfo('Editor abierto.');
 }

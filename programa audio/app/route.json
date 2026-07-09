@@ -1,4 +1,4 @@
-﻿[
+[
     {
         "lon":  -2.673345,
         "audio":  "01_Virgen Blanca.wav",
@@ -6,34 +6,35 @@
         "lat":  42.846635
     },
     {
-        "lon":  -2.673325,
+        "lon":  -2.673153,
         "audio":  "02_Entrada a casco medieval.wav",
         "name":  "Entrada Casco Medieval",
-        "lat":  42.847184
+        "lat":  42.846944,
+        "radius": 10
     },
     {
-        "lon":  -2.673641,
+        "lon":  -2.673642,
         "audio":  "03_Correria.wav",
         "name":  "Calle Correria",
-        "lat":  42.84855
+        "lat":  42.848175
     },
     {
-        "lon":  -2.673695,
+        "lon":  -2.673781,
         "audio":  "04_Canton Carnicerias.wav",
         "name":  "Canton Carnicerias",
-        "lat":  42.85009
+        "lat":  42.849797
     },
     {
-        "lon":  -2.672917,
+        "lon":  -2.672981,
         "audio":  "05_Escoriaza-Esquivel.wav",
         "name":  "Escoriaza-Esquivel",
-        "lat":  42.849791
+        "lat":  42.849792
     },
     {
-        "lon":  -2.672875,
+        "lon":  -2.672908,
         "audio":  "07_Montehermoso.wav",
         "name":  "Montehermoso",
-        "lat":  42.848723
+        "lat":  42.848928
     },
     {
         "lon":  -2.672652,
@@ -60,22 +61,22 @@
         "lat":  42.851216
     },
     {
-        "lon":  -2.673931,
+        "lon":  -2.673789,
         "audio":  "12_Herreria.wav",
         "name":  "Herreria",
-        "lat":  42.851365
+        "lat":  42.851589
     },
     {
-        "lon":  -2.67439,
+        "lon":  -2.674367,
         "audio":  "06_Murales.wav",
         "name":  "Murales",
-        "lat":  42.850357
+        "lat":  42.850411
     },
     {
-        "lon":  -2.674575,
+        "lon":  -2.674636,
         "audio":  "13_Cantones.wav",
         "name":  "Cantones",
-        "lat":  42.849254
+        "lat":  42.849386
     },
     {
         "lon":  -2.674581,
@@ -96,10 +97,11 @@
         "lat":  42.847225
     },
     {
-        "lon":  -2.676684,
+        "lon":  -2.676814,
         "audio":  "17_Catedral nueva.wav",
         "name":  "Catedral nueva",
-        "lat":  42.845954
+        "lat":  42.845817,
+        "radius": 10
     },
     {
         "lon":  -2.67603,
@@ -108,10 +110,11 @@
         "lat":  42.845421
     },
     {
-        "lon":  -2.678753,
+        "lon":  -2.678536,
         "audio":  "19_Mikaela Portilla.wav",
         "name":  "Mikaela Portilla",
-        "lat":  42.844279
+        "lat":  42.844328,
+        "autoNext": true
     },
     {
         "lon":  -2.681537,
@@ -120,10 +123,10 @@
         "lat":  42.843304
     },
     {
-        "lon":  -2.68319,
+        "lon":  -2.683119,
         "audio":  "21_El Prado.wav",
         "name":  "El Prado",
-        "lat":  42.842377
+        "lat":  42.842047
     },
     {
         "lon":  -2.682028,
@@ -168,15 +171,15 @@
         "lat":  42.84635
     },
     {
-        "lon":  -2.676397,
+        "lon":  -2.676583,
         "audio":  "29_Juntas y Parlamento.wav",
         "name":  "Juntas y Parlamento",
-        "lat":  42.845739
+        "lat":  42.845772
     },
     {
-        "lon":  -2.674696,
+        "lon":  -2.675400,
         "audio":  "30_Despedida.wav",
         "name":  "Despedida",
-        "lat":  42.846015
+        "lat":  42.845844
     }
 ]

@@ -12,15 +12,15 @@ import { getState, setState, markStopTriggered, loadSavedProgress, clearSavedPro
 import { logInfo, logWarn, logError, logSuccess } from './logger.js';
 import { playCurrentStop } from './audio.js';
 
-const TRIGGER_RADIUS_METERS = 10;   // Distance to trigger audio (restored to 10m)
-const MAX_ACCURACY_METERS   = 35;   // Discard GPS readings worse than this (relaxed from 25m)
+const STOP_RADIUS_METERS    = 10;   // Distance to trigger audio (Rule 3)
+const MAX_ACCURACY_METERS   = 35;   // Discard GPS readings worse than this
 const STOP_COOLDOWN_MS      = 5000; // Min ms between triggers for the same stop
 
 let _lastPositionTimestamp = null;
 let _watchdogInterval = null;
 
 /** Haversine distance in meters between two lat/lon pairs. @public */
-function haversine(lat1, lon1, lat2, lon2) {
+export function haversine(lat1, lon1, lat2, lon2) {
   const R  = 6_371_000; // Earth radius in meters
   const φ1 = lat1 * Math.PI / 180;
   const φ2 = lat2 * Math.PI / 180;
@@ -159,9 +159,13 @@ function onPosition(position) {
 
   const target   = route[currentStopIndex];
   const distance = haversine(latitude, longitude, target.lat, target.lon);
+  
+  // Rule 3: Fixed 10m radius, but expand up to half of the GPS accuracy if it's poor
+  const baseRadius = target.radius || STOP_RADIUS_METERS;
+  const effectiveRadius = Math.max(baseRadius, accuracy * 0.5);
 
-  // Dynamic filter: discard low-accuracy readings, UNLESS we are already very close to the target (<TRIGGER_RADIUS_METERS)
-  if (accuracy > MAX_ACCURACY_METERS && distance > TRIGGER_RADIUS_METERS) {
+  // Dynamic filter: discard low-accuracy readings, UNLESS we are already very close to the target (< effectiveRadius)
+  if (accuracy > MAX_ACCURACY_METERS && distance > effectiveRadius) {
     logWarn(`GPS impreciso (±${Math.round(accuracy)}m) a ${Math.round(distance)}m. Ignorando lectura.`);
     return;
   }
@@ -178,7 +182,7 @@ function onPosition(position) {
     }
   }));
 
-  if (distance <= TRIGGER_RADIUS_METERS) {
+  if (distance <= effectiveRadius) {
     // Cooldown guard — prevents double trigger on same stop
     const canTrigger = markStopTriggered(currentStopIndex, STOP_COOLDOWN_MS);
     if (!canTrigger) return;

@@ -11,11 +11,11 @@
  *  - Service Worker registration for offline capability
  */
 
-import { getState, setState, subscribe, resetTriggerLog, clearSavedProgress } from './state.js';
+import { getState, setState, subscribe, resetTriggerLog, clearSavedProgress, markStopTriggered } from './state.js';
 import { initLogger, logInfo, logSuccess, logWarn, logError } from './logger.js';
 import { loadRoute } from './route.js';
 import { initAudio, playCurrentStop, stopAudio, unlockAudio, pauseAudio, resumeAudio, playAmbient, pauseAmbient, stopAmbient, toggleAmbient, isAmbientPlaying } from './audio.js';
-import { startGPS, stopGPS, startRoute } from './gps.js';
+import { startGPS, stopGPS, startRoute, haversine } from './gps.js';
 import { initEditor } from './editor.js';
 import { castVideo } from './cast.js';
 
@@ -28,6 +28,15 @@ const el = {
   gpsStatus:    document.getElementById('gpsStatus'),
   accuracyBadge: document.getElementById('accuracyBadge'),
   currentTimeClock: document.getElementById('currentTimeClock'),
+
+  // GPS Alert Banner
+  gpsAlertBanner: document.getElementById('gpsAlertBanner'),
+  gpsAlertTitle:  document.getElementById('gpsAlertTitle'),
+  gpsAlertSub:    document.getElementById('gpsAlertSub'),
+  gpsAlertRetry:  document.getElementById('gpsAlertRetry'),
+
+  // Now-playing label
+  nowPlayingLabel: document.getElementById('nowPlayingLabel'),
 
   // Info card
   stopSelector:  document.getElementById('stopSelector'),
@@ -54,10 +63,10 @@ const el = {
   pauseBtn:     document.getElementById('pauseBtn'),
   pauseIcon:    document.getElementById('pauseIcon'),
   pauseLabel:   document.getElementById('pauseLabel'),
-  stopBtn:      document.getElementById('stopBtn'),
-  btnRestart:   document.getElementById('btnRestart'),
-  btnAmbientToggle: document.getElementById('btnAmbientToggle'),
-  ambientToggleLabel: document.getElementById('ambientToggleLabel'),
+  // Ambient toggle
+  ambientBtn:   document.getElementById('ambientBtn'),
+  ambientLabel: document.getElementById('ambientLabel'),
+  ambientToggleEl: document.getElementById('ambientToggleEl'),
   btnPlayLast:  document.getElementById('btnPlayLast'),
   btnSkip:      document.getElementById('btnSkip'),
 
@@ -140,10 +149,11 @@ async function releaseWakeLock() {
   }
 }
 
-// Re-acquire wake lock when page becomes visible again (required by spec)
+// Re-acquire wake lock when page becomes visible again if ambient music is on (required by spec / Rule 5)
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible') {
-    if (!_wakeLock) {
+    const ambientSaved = localStorage.getItem('audio_ilertren_ambient');
+    if (ambientSaved === 'on' && !_wakeLock) {
       await requestWakeLock();
     }
   }
@@ -189,7 +199,6 @@ function aplicarEstado(estado) {
   const { currentStopIndex } = getState();
   if (el.btnSkip) el.btnSkip.disabled = estado === Estados.INACTIVO;
   if (el.btnPlayLast) el.btnPlayLast.disabled = estado === Estados.INACTIVO || currentStopIndex === 0;
-  if (el.btnRestart) el.btnRestart.disabled = estado === Estados.INACTIVO;
 }
 
 // (Leaflet map features disabled)
@@ -222,7 +231,7 @@ function updateRouteUI() {
     if (currentStopIndex > 0 && route[currentStopIndex - 1]) {
       const p = route[currentStopIndex - 1];
       const numStr = String(currentStopIndex).padStart(2, '0');
-      elParadaActual.innerHTML = `<span class="stop-num">${numStr}.</span> ${p.name}`;
+      elParadaActual.innerHTML = `<span class="now-playing-num">${numStr}.</span> ${p.name}`;
     } else {
       elParadaActual.textContent = 'Inactivo';
     }
@@ -301,13 +310,67 @@ function updateAudioStatusUI(status) {
   }
 }
 
-// ─── Hold-to-Start Button Logic ────────────────────────────────────────────────
+// ─── Hold-to-Start Button Logic ──────────────────────────────────────────
 
 let holdStartTime = null;
 let holdRafId = null;
 let routeStarted = false;
 const CIRCUMFERENCE = 478;
 const HOLD_MS = 1500;
+
+// ─── Circular Route Mode ────────────────────────────────────────────────
+let _lapCount = 0;          // In-memory lap counter (not persisted)
+let _buttonMode = 'idle';   // 'idle' | 'running' | 'paused' | 'next-lap'
+
+/**
+ * Set the circular button mode.
+ * Controls appearance, interaction model, and visual state.
+ * @param {'idle'|'running'|'paused'|'next-lap'} mode
+ */
+function setButtonMode(mode) {
+  _buttonMode = mode;
+
+  if (el.holdCore) {
+    el.holdCore.classList.remove('started', 'running');
+    el.holdCore.style.borderColor = '';
+    el.holdCore.style.boxShadow = '';
+  }
+
+  switch (mode) {
+    case 'idle':
+      if (el.holdLabel) el.holdLabel.textContent = 'INICIAR';
+      if (el.holdHint) el.holdHint.textContent = 'Mantén pulsado 1.5s';
+      if (el.holdCore) el.holdCore.style.borderColor = 'var(--brick-bright)';
+      setHoldProgress(0);
+      break;
+
+    case 'running':
+      if (el.holdLabel) el.holdLabel.textContent = 'EN CURSO';
+      if (el.holdHint) el.holdHint.textContent = 'GPS activo';
+      if (el.holdCore) {
+        el.holdCore.style.borderColor = 'var(--ok)';
+        el.holdCore.classList.add('started', 'running');
+      }
+      break;
+
+    case 'paused':
+      if (el.holdLabel) el.holdLabel.textContent = 'Ruta en pausa';
+      if (el.holdCore) {
+        el.holdCore.style.borderColor = 'var(--brass)';
+      }
+      break;
+
+    case 'next-lap':
+      if (el.holdLabel) el.holdLabel.textContent = 'Siguiente vuelta';
+      if (el.holdHint) el.holdHint.textContent = `Toca para iniciar vuelta ${_lapCount + 1}`;
+      if (el.holdCore) {
+        el.holdCore.style.borderColor = 'var(--brass)';
+        el.holdCore.style.boxShadow = '0 0 0 3px rgba(201,154,74,.25)';
+      }
+      setHoldProgress(0);
+      break;
+  }
+}
 
 function setHoldProgress(p) {
   if (el.holdFill) {
@@ -328,6 +391,15 @@ function holdTick(timestamp) {
 }
 
 function onHoldPress(e) {
+  // Unlock audio immediately on direct user gesture (mousedown/touchstart)
+  unlockAudio();
+
+  // In 'next-lap' mode: single tap starts immediately, no hold needed
+  if (_buttonMode === 'next-lap') {
+    if (e.cancelable) e.preventDefault();
+    executeNextLap();
+    return;
+  }
   if (routeStarted) return;
   if (e.cancelable) e.preventDefault();
   holdStartTime = null;
@@ -336,6 +408,7 @@ function onHoldPress(e) {
 }
 
 function onHoldRelease() {
+  if (_buttonMode === 'next-lap') return; // handled on press
   if (routeStarted) return;
   cancelAnimationFrame(holdRafId);
   if (el.holdCore) el.holdCore.style.transform = 'scale(1)';
@@ -344,6 +417,7 @@ function onHoldRelease() {
 }
 
 async function onHoldComplete() {
+  if ('vibrate' in navigator) navigator.vibrate(50);
   const { route } = getState();
   if (route.length === 0) {
     logError('No hay ruta cargada. Edita o importa una ruta primero.');
@@ -373,40 +447,117 @@ function holdReset() {
   cancelAnimationFrame(holdRafId);
   if (el.holdCore) {
     el.holdCore.style.transform = 'scale(1)';
-    el.holdCore.classList.remove('started');
   }
-  setHoldProgress(0);
+  setButtonMode('idle');
   holdStartTime = null;
-  if (el.holdLabel) el.holdLabel.textContent = 'Iniciar ruta';
-  if (el.holdHint) el.holdHint.textContent = 'Mantén pulsado 1.5s';
 }
 
 async function executeRouteStart() {
   routeStarted = true;
   if (el.holdCore) {
     el.holdCore.style.transform = 'scale(1)';
-    el.holdCore.classList.add('started');
-    el.holdCore.classList.add('running'); // animación pulso: ruta activa
   }
-  if (el.holdLabel) el.holdLabel.textContent = 'Ruta iniciada';
-  if (el.holdHint) el.holdHint.textContent = 'GPS activo';
+  setButtonMode('running');
+
+  // Play stop 1 immediately (synchronously trigger it to preserve user gesture context)
+  setState({ currentStopIndex: 0 });
+  markStopTriggered(0, 5000);
+  playCurrentStop();
 
   // Update GPS pill visual state
   updateGPSStatusUI('running');
 
-  // Trigger GPS route tracking
-  await startRoute();
-  playAmbient();
-  await enterFullscreen();
+  // Trigger GPS route tracking (async background tasks)
+  startRoute().catch(err => logError(err.message));
+  if (localStorage.getItem('audio_ilertren_ambient') === 'on') {
+    playAmbient();
+  }
+  enterFullscreen().catch(err => logWarn(err.message));
 
-  // Show pause/stop row
+  // Show pause row
   if (el.pauseRow) el.pauseRow.classList.add('visible');
-  if (el.stopBtn) el.stopBtn.classList.add('visible');
 
   // Start travel timer
   startRouteTimer();
 
   aplicarEstado(Estados.ACTIVO);
+}
+
+/**
+ * Execute the start of the next lap (single-tap, no hold).
+ * GPS stays active, ambient music continues, no permission re-request.
+ */
+async function executeNextLap() {
+  if ('vibrate' in navigator) navigator.vibrate(50);
+  routeStarted = true;
+  setButtonMode('running');
+
+  // Update now-playing label back to normal
+  if (el.nowPlayingLabel) el.nowPlayingLabel.textContent = 'Reproduciendo ahora';
+
+  // GPS pill back to running
+  updateGPSStatusUI('running');
+
+  // GPS is already active from previous lap — just ensure watchPosition is running
+  const { gpsStatus } = getState();
+  if (gpsStatus !== 'running') {
+    startGPS();
+  }
+
+  // Show pause row (in case hidden)
+  if (el.pauseRow) el.pauseRow.classList.add('visible');
+
+  aplicarEstado(Estados.ACTIVO);
+  logSuccess(`Vuelta ${_lapCount + 1} iniciada. GPS activo.`);
+
+  // Play stop 1 immediately and mark it as triggered
+  setState({ currentStopIndex: 0 });
+  markStopTriggered(0, 5000);
+  playCurrentStop();
+}
+
+/**
+ * Called when the last stop audio finishes. Resets the route for the next lap
+ * WITHOUT touching ambient music, GPS, or requiring new permissions.
+ */
+function onRouteComplete() {
+  _lapCount++;
+  const { route } = getState();
+
+  logSuccess(`🎉 Vuelta ${_lapCount} completada. Lista para vuelta ${_lapCount + 1}.`);
+
+  // 1. Reset internal route state
+  setState({ currentStopIndex: 0 });
+  resetTriggerLog();
+
+  // 2. Ambient music: DO NOT touch it — continues playing as-is
+
+  // 3. Update the now-playing card for "ready for next lap"
+  const elParadaActual = document.getElementById('paradaActualNombre');
+  const elParadaSiguiente = document.getElementById('paradaSiguienteNombre');
+
+  if (el.nowPlayingLabel) el.nowPlayingLabel.textContent = 'LISTA PARA SIGUIENTE VUELTA';
+  if (elParadaActual && route[0]) {
+    elParadaActual.innerHTML = `<span class="now-playing-num">01.</span> ${route[0].name}`;
+  }
+  if (elParadaSiguiente && route[1]) {
+    elParadaSiguiente.textContent = `02. ${route[1].name}`;
+  }
+
+  // Reset progress bar
+  if (el.progressBar) el.progressBar.style.width = '0%';
+  const elCurrentTime = document.getElementById('audioCurrentTime');
+  const elDuration = document.getElementById('audioDuration');
+  if (elCurrentTime) elCurrentTime.textContent = '0:00';
+  if (elDuration) elDuration.textContent = '0:00';
+
+  // Reset stop counter
+  if (el.mapStopCounter) el.mapStopCounter.textContent = `1 / ${route.length}`;
+
+  // 4. Change button to "next-lap" mode (single tap)
+  setButtonMode('next-lap');
+
+  // Keep pause/stop visible so conductor can still stop the whole session
 }
 
 // ─── Journey Stopwatch Logic ──────────────────────────────────────────────────
@@ -457,6 +608,179 @@ function startClock() {
   setInterval(updateClock, 15000);
 }
 
+// ─── GPS Alert Banner — 3-Level Degradation System ───────────────────────────────
+
+let _poorAccuracyTimer = null;
+let _gpsLostTimerL2    = null;   // 15s → amber
+let _gpsLostTimerL3    = null;   // 60s → red
+let _lastKnownPosition = null;   // { latitude, longitude, accuracy, timestamp }
+let _currentGpsAlertLevel = null; // null | 'inactive' | 'weak' | 'lost'
+
+// Default banner content (GPS not started)
+const GPS_BANNER_DEFAULTS = {
+  title: 'GPS INACTIVO — La ruta no puede guiarse',
+  sub:   'Activa la ubicación antes de salir. Los audios no se dispararán automáticamente.',
+  btn:   'Activar GPS ahora',
+  bg:    'linear-gradient(135deg, #8C0A0A, #C8451E)',
+};
+
+function _syncMainHeight(bannerVisible) {
+  // Desactivado: el flex:1 en CSS maneja la altura de forma dinámica nativa sin desbordamientos
+}
+
+/**
+ * Show the GPS alert banner in "app not started" mode (red).
+ * Used at boot or when GPS fails before a route is active.
+ */
+function showGpsAlert() {
+  if (!el.gpsAlertBanner) return;
+
+  // Reset to default content
+  if (el.gpsAlertTitle) el.gpsAlertTitle.textContent = GPS_BANNER_DEFAULTS.title;
+  if (el.gpsAlertSub)   el.gpsAlertSub.textContent   = GPS_BANNER_DEFAULTS.sub;
+  if (el.gpsAlertRetry) el.gpsAlertRetry.textContent  = GPS_BANNER_DEFAULTS.btn;
+  el.gpsAlertBanner.style.background = GPS_BANNER_DEFAULTS.bg;
+
+  el.gpsAlertBanner.classList.add('visible');
+  _currentGpsAlertLevel = 'inactive';
+  _syncMainHeight(true);
+
+  if ('vibrate' in navigator) navigator.vibrate([300, 100, 300]);
+}
+
+/**
+ * Show the GPS alert banner adapted for an active route.
+ * @param {'weak'|'lost'} level
+ */
+function showGpsAlertInRoute(level) {
+  if (!el.gpsAlertBanner) return;
+
+  if (level === 'weak') {
+    if (el.gpsAlertTitle) el.gpsAlertTitle.textContent = '⚠️ SEÑAL GPS DÉBIL — Usando última posición conocida';
+    if (el.gpsAlertSub)   el.gpsAlertSub.textContent   = 'Los audios seguirán activándose al recuperar señal';
+    if (el.gpsAlertRetry) el.gpsAlertRetry.textContent  = 'Activar manualmente';
+    el.gpsAlertBanner.style.background = 'linear-gradient(135deg, #7A5500, #C99A4A)';
+    _currentGpsAlertLevel = 'weak';
+  } else if (level === 'lost') {
+    if (el.gpsAlertTitle) el.gpsAlertTitle.textContent = '🔴 GPS PERDIDO — Activa manualmente las paradas';
+    if (el.gpsAlertSub)   el.gpsAlertSub.textContent   = "Pulsa 'Siguiente parada' cuando llegues a cada punto";
+    if (el.gpsAlertRetry) el.gpsAlertRetry.textContent  = 'Entendido';
+    el.gpsAlertBanner.style.background = 'linear-gradient(135deg, #8C0A0A, #C8451E)';
+    _currentGpsAlertLevel = 'lost';
+
+    // Update GPS pill to "GPS perdido"
+    updateGPSStatusUI('error', 'GPS perdido');
+  }
+
+  el.gpsAlertBanner.classList.add('visible');
+  _syncMainHeight(true);
+
+  if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+}
+
+/** Hide the GPS alert banner and reset all degradation timers. */
+function hideGpsAlert() {
+  if (!el.gpsAlertBanner) return;
+  el.gpsAlertBanner.classList.remove('visible');
+  el.gpsAlertBanner.style.background = '';
+  _currentGpsAlertLevel = null;
+  _syncMainHeight(false);
+  _clearGpsLossTimers();
+}
+
+/** Clear all GPS loss degradation timers. */
+function _clearGpsLossTimers() {
+  if (_gpsLostTimerL2) { clearTimeout(_gpsLostTimerL2); _gpsLostTimerL2 = null; }
+  if (_gpsLostTimerL3) { clearTimeout(_gpsLostTimerL3); _gpsLostTimerL3 = null; }
+  if (_poorAccuracyTimer) { clearTimeout(_poorAccuracyTimer); _poorAccuracyTimer = null; }
+}
+
+/**
+ * Start the GPS loss degradation timers (route-active context).
+ * Level 2 at 15s, Level 3 at 60s.
+ */
+function _startGpsLossTimers() {
+  if (_gpsLostTimerL2) return; // already running
+
+  _gpsLostTimerL2 = setTimeout(() => {
+    _gpsLostTimerL2 = null;
+    showGpsAlertInRoute('weak');
+    logWarn('Señal GPS débil durante >15s. Usando última posición conocida.');
+  }, 15000);
+
+  _gpsLostTimerL3 = setTimeout(() => {
+    _gpsLostTimerL3 = null;
+    showGpsAlertInRoute('lost');
+    logError('GPS perdido durante >60s. Activa las paradas manualmente.');
+  }, 60000);
+}
+
+/** Start/reset the poor-accuracy countdown (>50m for 10s → show alert). */
+function onAccuracyCheck(accuracy) {
+  if (accuracy > 50) {
+    if (!_poorAccuracyTimer) {
+      _poorAccuracyTimer = setTimeout(() => {
+        if (routeStarted) {
+          showGpsAlertInRoute('weak');
+        } else {
+          showGpsAlert();
+        }
+        _poorAccuracyTimer = null;
+      }, 10000);
+    }
+  } else {
+    if (_poorAccuracyTimer) {
+      clearTimeout(_poorAccuracyTimer);
+      _poorAccuracyTimer = null;
+    }
+  }
+}
+
+/**
+ * GPS Recovery: check if any stops were skipped during GPS loss.
+ * Compares lastKnownPosition vs newPosition against the route.
+ * Advances index without playing skipped audios.
+ */
+function _checkSkippedStops(newLat, newLon, accuracy) {
+  if (!_lastKnownPosition) return;
+
+  const { route, currentStopIndex } = getState();
+  if (!route || route.length === 0 || currentStopIndex >= route.length) return;
+
+  // Find the closest remaining stop in route sequence order
+  let closestIndex = currentStopIndex;
+  let minDistance = Infinity;
+
+  for (let i = currentStopIndex; i < route.length; i++) {
+    const stop = route[i];
+    const dist = haversine(newLat, newLon, stop.lat, stop.lon);
+    if (dist < minDistance) {
+      minDistance = dist;
+      closestIndex = i;
+    }
+  }
+
+  // Calculate effective radius and recovery threshold for target stop
+  const targetStop = route[closestIndex];
+  const baseRadius = targetStop.radius || 10;
+  const effectiveRadius = Math.max(baseRadius, accuracy * 0.5);
+  const recoveryThreshold = Math.max(effectiveRadius, 20); // 20m recovery margin
+
+  if (closestIndex > currentStopIndex && minDistance <= recoveryThreshold) {
+    logWarn(`GPS recuperado: saltando paradas omitidas hasta "${targetStop.name}" (distancia: ${Math.round(minDistance)}m).`);
+    setState({ currentStopIndex: closestIndex });
+
+    // If we are within the effective radius, play immediately
+    if (minDistance <= effectiveRadius) {
+      const canTrigger = markStopTriggered(closestIndex, 5000);
+      if (canTrigger) {
+        logSuccess(`📍 Llegada a (recuperado): ${targetStop.name} (${Math.round(minDistance)}m)`);
+        playCurrentStop();
+      }
+    }
+  }
+}
+
 // ─── Event Wiring ─────────────────────────────────────────────────────────────
 
 let routePaused = false;
@@ -482,73 +806,37 @@ function wireControls() {
   // Pause / Resume Route Event Listener
   if (el.pauseBtn) {
     el.pauseBtn.addEventListener('click', () => {
+      if ('vibrate' in navigator) navigator.vibrate(50);
       routePaused = !routePaused;
       if (routePaused) {
         // Apply Paused Visuals
         el.pauseBtn.classList.add('is-paused');
         if (el.pauseIcon) el.pauseIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
-        if (el.pauseLabel) el.pauseLabel.textContent = 'Reanudar ruta';
+        if (el.pauseLabel) el.pauseLabel.textContent = 'Reanudar';
         if (el.holdHint) el.holdHint.textContent = 'GPS en pausa';
+        setButtonMode('paused');
         updateGPSStatusUI('paused');
 
         // Geolocation & Audio Pause actions
         stopGPS();
         pauseAudio();
-        pauseAmbient();
         stopRouteTimer();
-        if (el.holdCore) el.holdCore.classList.remove('running'); // pausa: quitar pulso
       } else {
         // Apply Active Visuals
         el.pauseBtn.classList.remove('is-paused');
         if (el.pauseIcon) el.pauseIcon.innerHTML = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
-        if (el.pauseLabel) el.pauseLabel.textContent = 'Pausar ruta';
-        if (el.holdHint) el.holdHint.textContent = 'GPS activo';
+        if (el.pauseLabel) el.pauseLabel.textContent = 'Pausa';
+        setButtonMode('running');
         updateGPSStatusUI('running');
 
         // Geolocation & Audio Resume actions
         startGPS();
         resumeAudio();
-        playAmbient();
+        if (localStorage.getItem('audio_ilertren_ambient') === 'on') {
+          playAmbient();
+        }
         startRouteTimer();
-        if (el.holdCore) el.holdCore.classList.add('running'); // reanudado: volver pulso
       }
-    });
-  }
-
-  // Stop Route Event Listener
-  if (el.stopBtn) {
-    el.stopBtn.addEventListener('click', () => {
-      routeStarted = false;
-      routePaused = false;
-      
-      // Call GPS & Audio stop actions
-      stopGPS();
-      stopAudio();
-      stopAmbient();
-      stopRouteTimer();
-
-      // Reset stopwatch
-      routeTimeElapsedMs = 0;
-      updateRouteTimerDisplay(0);
-
-      // Revert Circular hold visual state
-      holdReset();
-      if (el.holdCore) el.holdCore.classList.remove('running', 'started');
-      updateGPSStatusUI('idle');
-
-      // Hide pause/stop row
-      if (el.pauseRow) el.pauseRow.classList.remove('visible');
-      el.stopBtn.classList.remove('visible');
-
-      // Revert Pause button inner content
-      if (el.pauseBtn) {
-        el.pauseBtn.classList.remove('is-paused');
-        if (el.pauseIcon) el.pauseIcon.innerHTML = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
-        if (el.pauseLabel) el.pauseLabel.textContent = 'Pausar ruta';
-      }
-
-      exitFullscreen();
-      aplicarEstado(Estados.INACTIVO);
     });
   }
 
@@ -567,53 +855,13 @@ function wireControls() {
   // Skip: manually advance to next stop and play immediately
   if (el.btnSkip) {
     el.btnSkip.addEventListener('click', () => {
+      if ('vibrate' in navigator) navigator.vibrate(50);
       logInfo('Parada omitida manualmente.');
       playCurrentStop();
     });
   }
 
-  // Restart: reset index and trigger log, clear saved progress
-  if (el.btnRestart) {
-    el.btnRestart.addEventListener('click', () => {
-      if (!confirm('¿Reiniciar la ruta completa desde el principio?')) return;
-      
-      stopAudio();
-      stopAmbient();
-      updateAmbientToggleUI();
-      stopGPS();
-      stopRouteTimer();
-      routeTimeElapsedMs = 0;
-      updateRouteTimerDisplay(0);
-
-      setState({ currentStopIndex: 0 });
-      resetTriggerLog();
-      clearSavedProgress();
-      
-      // Fully reset visual elements
-      holdReset();
-      updateGPSStatusUI('idle');
-
-      if (el.pauseRow) el.pauseRow.classList.remove('visible');
-      if (el.stopBtn) el.stopBtn.classList.remove('visible');
-      if (el.pauseBtn) {
-        el.pauseBtn.classList.remove('is-paused');
-        if (el.pauseIcon) el.pauseIcon.innerHTML = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
-        if (el.pauseLabel) el.pauseLabel.textContent = 'Pausar ruta';
-      }
-
-      // Mostrar la imagen de inicio en el Chromecast
-      try {
-        const imageUrl = `${window.location.origin}/SDVideo/StartingImage.png`;
-        castVideo(imageUrl, 'Vitoria Casco Viejo 2026');
-      } catch (e) {
-        console.error('Error al enviar imagen de inicio al Chromecast:', e);
-      }
-
-      logInfo('Ruta reiniciada completa. Mantén pulsado para iniciar.');
-      updateRouteUI();
-      aplicarEstado(Estados.INACTIVO);
-    });
-  }
+  // PlayLast event ended
 
   // Retry GPS
   if (el.btnGpsRetry) {
@@ -624,9 +872,28 @@ function wireControls() {
     });
   }
 
+  // GPS Alert Banner retry button — context-aware behavior
+  if (el.gpsAlertRetry) {
+    el.gpsAlertRetry.addEventListener('click', () => {
+      // Level 3 "Entendido" — just dismiss the banner
+      if (_currentGpsAlertLevel === 'lost') {
+        hideGpsAlert();
+        return;
+      }
+      // Otherwise, try to activate GPS
+      if (el.btnGpsRetry) {
+        el.btnGpsRetry.click();
+      } else {
+        logInfo('Reintentando activar GPS desde banner...');
+        startGPS();
+      }
+    });
+  }
+
   // Ambient toggle button
   if (el.btnAmbientToggle) {
     el.btnAmbientToggle.addEventListener('click', () => {
+      if ('vibrate' in navigator) navigator.vibrate(50);
       toggleAmbient();
       updateAmbientToggleUI();
     });
@@ -648,7 +915,7 @@ function wireControls() {
 }
 
 function wireGPSEvents() {
-  // Distance updates from GPS module
+  // Distance updates from GPS module — valid position received
   window.addEventListener('gps:distance', (e) => {
     const { distance, accuracy, speed, latitude, longitude } = e.detail;
     if (el.distanceValue) el.distanceValue.textContent  = distance;
@@ -663,15 +930,38 @@ function wireGPSEvents() {
       el.mapSpeed.textContent = `${kmh} km/h`;
     }
 
+    // GPS Recovery: if we were in a loss state, check for skipped stops
+    if (_currentGpsAlertLevel === 'weak' || _currentGpsAlertLevel === 'lost') {
+      _checkSkippedStops(latitude, longitude);
+      logSuccess('Señal GPS recuperada.');
+    }
 
+    // Store last known position for degradation recovery
+    _lastKnownPosition = { latitude, longitude, accuracy, timestamp: Date.now() };
+
+    // GPS is delivering valid positions → hide alert banner and clear all timers
+    hideGpsAlert();
+
+    // Monitor accuracy degradation (>50m for 10s → GPS blocked in buildings)
+    onAccuracyCheck(accuracy);
   });
 
   window.addEventListener('gps:started', () => {
     updateGPSStatusUI('running');
+    // Only hide alert if there's no active degradation (watchdog restarts
+    // dispatch gps:started but don't mean we have signal yet)
+    if (!_gpsLostTimerL2 && !_gpsLostTimerL3 && _currentGpsAlertLevel !== 'weak' && _currentGpsAlertLevel !== 'lost') {
+      hideGpsAlert();
+    }
     aplicarEstado(Estados.ACTIVO);
   });
 
   window.addEventListener('gps:stopped', () => {
+    // Don't downgrade UI during active route with GPS loss (watchdog restarts
+    // dispatch gps:stopped transiently — should be invisible to the user)
+    if (routeStarted && (_currentGpsAlertLevel === 'weak' || _currentGpsAlertLevel === 'lost' || _gpsLostTimerL2)) {
+      return;
+    }
     updateGPSStatusUI('idle');
     if (el.distanceValue) el.distanceValue.textContent = '—';
     aplicarEstado(Estados.PAUSADO);
@@ -680,6 +970,15 @@ function wireGPSEvents() {
   window.addEventListener('gps:error', (e) => {
     const { message } = e.detail || {};
     updateGPSStatusUI('error', message);
+
+    if (!routeStarted) {
+      // Pre-route: show the standard inactive alert
+      showGpsAlert();
+    } else {
+      // Route active: start the 3-level degradation timers
+      // Level 1 (<15s): silent — just let the timers run
+      _startGpsLossTimers();
+    }
   });
 }
 
@@ -704,15 +1003,18 @@ function initRGPD() {
     const onAccept = () => {
       localStorage.setItem('routemaker_gps_consent', 'true');
       modal.classList.add('hidden');
-      if (typeof callback === 'function') callback();
+      unlockAudio().then(() => {
+        if (typeof callback === 'function') callback();
+      });
     };
     
     btnAccept.addEventListener('click', onAccept, { once: true });
   });
 }
 
-// Warning if there are unexported edits
+// Warning if there are unexported edits & release WakeLock on close
 window.addEventListener('beforeunload', (e) => {
+  releaseWakeLock();
   const isEdited = localStorage.getItem('routemaker_route_edited_v1') === 'true';
   if (isEdited) {
     e.preventDefault();
@@ -800,7 +1102,13 @@ function wireAudioProgressEvents() {
   };
 
   el.audioPlayer.addEventListener('emptied', resetProgressUI);
-  el.audioPlayer.addEventListener('ended', resetProgressUI);
+  el.audioPlayer.addEventListener('ended', () => {
+    resetProgressUI();
+    const { route, currentStopIndex } = getState();
+    if (route.length > 0 && currentStopIndex >= route.length) {
+      onRouteComplete();
+    }
+  });
 }
 
 // ─── Boot ────────────────────────────────────────────────────────────────────
@@ -832,11 +1140,10 @@ async function boot() {
     wireStateSubscriptions();
     wireAudioProgressEvents();
     
-    // Initialize RGPD modal listeners
+    // 5. Initialize secondary UI elements
     initRGPD();
-
-    // Initialize theme (light/dark) toggle
     initTheme();
+    initAmbientToggle();
 
     // Start local time clock
     startClock();
@@ -844,8 +1151,18 @@ async function boot() {
     // Set initial button states
     aplicarEstado(Estados.INACTIVO);
 
-    // 5. WakeLock permanente (la pantalla no se apaga nunca mientras la app esté abierta)
-    await requestWakeLock();
+    // Auto-start GPS if consent exists, otherwise show alert banner
+    if (localStorage.getItem('routemaker_gps_consent') === 'true') {
+      startGPS();
+    } else {
+      showGpsAlert();
+    }
+
+    // 5. WakeLock ligado a música de ambiente (Rule 5)
+    const ambientSaved = localStorage.getItem('audio_ilertren_ambient');
+    if (ambientSaved === 'on') {
+      await requestWakeLock();
+    }
 
     // 6. Load route
     const loaded = await loadRoute();
@@ -888,23 +1205,79 @@ function initTheme() {
 
   // Restore last saved preference
   const saved = localStorage.getItem('audio_ilertren_theme');
-  if (saved === 'light') {
-    document.documentElement.classList.add('light-mode');
+  if (saved === 'dark') {
+    document.documentElement.classList.add('dark-mode');
+    btn.textContent = '☀️';
+    btn.title = 'Cambiar a modo día';
+    btn.setAttribute('aria-label', 'Cambiar a modo día');
+  } else {
+    document.documentElement.classList.remove('dark-mode');
     btn.textContent = '🌙';
-    btn.setAttribute('aria-label', 'Cambiar a modo oscuro');
+    btn.title = 'Cambiar a modo noche';
+    btn.setAttribute('aria-label', 'Cambiar a modo noche');
   }
 
   btn.addEventListener('click', () => {
-    const isLight = document.documentElement.classList.toggle('light-mode');
-    if (isLight) {
-      btn.textContent = '🌙';
-      btn.setAttribute('aria-label', 'Cambiar a modo oscuro');
-      localStorage.setItem('audio_ilertren_theme', 'light');
-    } else {
-      btn.textContent = '\u2600\uFE0F'; // ☀️
-      btn.setAttribute('aria-label', 'Cambiar a modo claro');
+    const isDark = document.documentElement.classList.toggle('dark-mode');
+    if (isDark) {
+      btn.textContent = '☀️';
+      btn.title = 'Cambiar a modo día';
+      btn.setAttribute('aria-label', 'Cambiar a modo día');
       localStorage.setItem('audio_ilertren_theme', 'dark');
+    } else {
+      btn.textContent = '🌙';
+      btn.title = 'Cambiar a modo noche';
+      btn.setAttribute('aria-label', 'Cambiar a modo noche');
+      localStorage.setItem('audio_ilertren_theme', 'day');
     }
+  });
+}
+
+// ─── Ambient Toggle ──────────────────────────────────────────────────────────
+
+function initAmbientToggle() {
+  const btn = el.ambientBtn;
+  const label = el.ambientLabel;
+  if (!btn || !label) return;
+
+  // Restore state from localStorage
+  const saved = localStorage.getItem('audio_ilertren_ambient');
+  let ambientOn = (saved === 'on');
+
+  const updateUI = () => {
+    btn.classList.toggle('on', ambientOn);
+    label.textContent = ambientOn ? 'Música ambiente - ON' : 'Música ambiente';
+  };
+
+  // Set initial UI (audio is unlocked later via user interaction)
+  updateUI();
+
+  if (ambientOn) {
+    document.addEventListener('click', function startAmbientOnFirstTouch() {
+      // Re-read current state to ensure the user didn't turn it off manually in between
+      const currentSaved = localStorage.getItem('audio_ilertren_ambient');
+      if (currentSaved === 'on') {
+        import('./audio.js').then(({ playAmbient }) => {
+          playAmbient();
+        });
+      }
+    }, { once: true });
+  }
+
+  btn.addEventListener('click', () => {
+    ambientOn = !ambientOn;
+    localStorage.setItem('audio_ilertren_ambient', ambientOn ? 'on' : 'off');
+    updateUI();
+
+    import('./audio.js').then(({ playAmbient, stopAmbient }) => {
+      if (ambientOn) {
+        playAmbient();
+        requestWakeLock();
+      } else {
+        stopAmbient();
+        releaseWakeLock();
+      }
+    });
   });
 }
 
