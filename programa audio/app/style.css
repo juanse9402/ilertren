@@ -717,8 +717,7 @@ html.dark-mode .hold-core {
   .pill-net { display: none; }
 
   @media screen and (max-width: 600px) {
-    #btnDownloadOffline .btn-text { display: none; }
-    #btnDownloadOffline { padding: 7px 10px; }
+    /* (Download button text is now always visible since it's a main button) */
   }
 }
 
