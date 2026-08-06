@@ -10,7 +10,7 @@
  *  - Object URLs are revoked after use to prevent memory leaks
  */
 
-import { getState, setState } from './state.js';
+import { getState, setState, subscribe } from './state.js';
 import { logInfo, logSuccess, logWarn, logError } from './logger.js';
 import { getAudio } from './db.js';
 import { castVideo } from './cast.js';
@@ -19,6 +19,10 @@ const AUDIO_PREFIX = 'indexeddb_';
 let _player = null;
 let _ambientPlayer = null;
 let _currentObjectUrl = null;
+
+// Preload state
+let _preloadedStopIndex = -1;
+let _preloadedObjectUrl = null;
 let _unlocked = false;
 
 // Web Audio API context and nodes for iOS volume control bypass
@@ -154,6 +158,43 @@ export function initAudio(el) {
       fadeVolume(_ambientPlayer, AMBIENT_VOLUME_NORMAL, FADE_UP_MS);
     }
   });
+
+  // Ensure media session doesn't try to auto-handle media keys for ambient
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.setActionHandler('play', null);
+    navigator.mediaSession.setActionHandler('pause', null);
+  }
+
+  // Auto-preload the next audio whenever currentStopIndex changes
+  subscribe('currentStopIndex', () => {
+    preloadNextAudio();
+  });
+}
+
+/**
+ * Preloads the audio for the currentStopIndex silently in the background
+ */
+export async function preloadNextAudio() {
+  const { route, currentStopIndex } = getState();
+  if (currentStopIndex >= route.length) return;
+
+  if (_preloadedStopIndex === currentStopIndex) return; // Already preloaded
+
+  const stop = route[currentStopIndex];
+  if (!stop || !stop.audio) return;
+
+  if (stop.audio.startsWith(AUDIO_PREFIX)) {
+    try {
+      const blob = await getAudio(stop.audio);
+      if (blob) {
+        if (_preloadedObjectUrl) URL.revokeObjectURL(_preloadedObjectUrl);
+        _preloadedObjectUrl = URL.createObjectURL(blob);
+        _preloadedStopIndex = currentStopIndex;
+      }
+    } catch (err) {
+      console.warn(`Failed to preload audio: ${stop.audio}`, err);
+    }
+  }
 }
 
 let _ambientWakeLock = null;
@@ -287,7 +328,17 @@ function _revokeCurrentUrl() {
 async function _resolveSource(stop) {
   if (!stop.audio) throw new Error('Esta parada no tiene audio asignado.');
 
+  const { route, currentStopIndex } = getState();
+
   if (stop.audio.startsWith(AUDIO_PREFIX)) {
+    if (_preloadedStopIndex === currentStopIndex && _preloadedObjectUrl) {
+      _currentObjectUrl = _preloadedObjectUrl;
+      // Detach preloaded reference so it doesn't get revoked unexpectedly
+      _preloadedObjectUrl = null;
+      _preloadedStopIndex = -1;
+      return _currentObjectUrl;
+    }
+
     const blob = await getAudio(stop.audio);
     if (!blob) throw new Error(`Audio local no encontrado: "${stop.audio}"`);
     _currentObjectUrl = URL.createObjectURL(blob);

@@ -81,6 +81,7 @@ const el = {
   mapStopCounter:  document.getElementById('mapStopCounter'),
   mapTimeInRoute:  document.getElementById('mapTimeInRoute'),
   mapSpeed:        document.getElementById('mapSpeed'),
+  mapDistancia:    document.getElementById('mapDistancia'),
   mapRouteTraveled:document.getElementById('mapRouteTraveled'),
   mapVehicleMarker:document.getElementById('mapVehicleMarker'),
 
@@ -93,8 +94,16 @@ const el = {
   btnExport:      document.getElementById('btnExport'),
   btnResetRoute:  document.getElementById('btnResetRoute'),
 
+  // Planilla
+  btnOpenPlanilla: document.getElementById('btnOpenPlanilla'),
+  btnClosePlanilla: document.getElementById('btnClosePlanilla'),
+  planillaScreen:  document.getElementById('planillaScreen'),
+  planillaIframe:  document.getElementById('planillaIframe'),
+
   // Theme toggle
   btnTheme: document.getElementById('btnTheme'),
+  btnFullscreen: document.getElementById('btnFullscreen'),
+  btnDownloadOffline: document.getElementById('btnDownloadOffline'),
 };
 
 // ─── Fullscreen API ───────────────────────────────────────────────────────────
@@ -172,19 +181,65 @@ document.addEventListener('visibilitychange', () => {
 
 // ─── UI Update Functions ──────────────────────────────────────────────────────
 
-function populateStopSelector(route) {
+function populateStopSelector(route, currentLat = null, currentLon = null) {
   if (!el.stopSelector) return;
+
+  // Don't update options if the driver has the select dropdown open/focused
+  if (document.activeElement === el.stopSelector) return;
+
+  const currentSelection = el.stopSelector.value;
   el.stopSelector.innerHTML = '';
+
   if (route.length === 0) {
     el.stopSelector.innerHTML = '<option value="empty" disabled selected>Sin ruta cargada</option>';
     return;
   }
+
+  // Get closest stops if we have coordinates
+  let closestStops = [];
+  if (currentLat !== null && currentLon !== null) {
+    const stopsWithDist = route.map((stop, index) => {
+      const dist = haversine(currentLat, currentLon, stop.lat, stop.lon);
+      return { stop, index, dist };
+    });
+
+    // Sort by distance and take top 3
+    stopsWithDist.sort((a, b) => a.dist - b.dist);
+    closestStops = stopsWithDist.slice(0, 3);
+  }
+
+  // Add closest group
+  if (closestStops.length > 0) {
+    const groupClose = document.createElement('optgroup');
+    groupClose.label = '📍 Cerca de ti';
+    closestStops.forEach(({ stop, index, dist }) => {
+      const opt = document.createElement('option');
+      opt.value = index;
+      const distStr = dist < 1000 ? `${Math.round(dist)}m` : `${(dist/1000).toFixed(1)}km`;
+      opt.textContent = `${String(index + 1).padStart(2, '0')}. ${stop.name} (${distStr})`;
+      groupClose.appendChild(opt);
+    });
+    el.stopSelector.appendChild(groupClose);
+  }
+
+  // Add all stops group
+  const groupAll = document.createElement('optgroup');
+  groupAll.label = '🚏 Todas las paradas';
   route.forEach((stop, index) => {
     const opt = document.createElement('option');
     opt.value = index;
     opt.textContent = `${String(index + 1).padStart(2, '0')}. ${stop.name}`;
-    el.stopSelector.appendChild(opt);
+    groupAll.appendChild(opt);
   });
+  el.stopSelector.appendChild(groupAll);
+
+  // Restore selection
+  if (currentSelection && el.stopSelector.querySelector(`option[value="${currentSelection}"]`)) {
+    el.stopSelector.value = currentSelection;
+  } else {
+    const { currentStopIndex } = getState();
+    el.stopSelector.value = currentStopIndex;
+  }
 }
 
 function updateAmbientToggleUI() {
@@ -277,6 +332,9 @@ function updateRouteUI() {
   if (el.btnPlayLast) {
     const { gpsStatus } = getState();
     el.btnPlayLast.disabled = gpsStatus === 'idle' || currentStopIndex === 0;
+  }
+  if (el.stopSelector) {
+    el.stopSelector.value = currentStopIndex;
   }
 }
 
@@ -663,7 +721,7 @@ function showGpsAlertInRoute(level) {
     _currentGpsAlertLevel = 'weak';
   } else if (level === 'lost') {
     if (el.gpsAlertTitle) el.gpsAlertTitle.textContent = '🔴 GPS PERDIDO — Activa manualmente las paradas';
-    if (el.gpsAlertSub)   el.gpsAlertSub.textContent   = "Pulsa 'Siguiente parada' cuando llegues a cada punto";
+    if (el.gpsAlertSub)   el.gpsAlertSub.textContent   = "Pulsa 'Siguiente audio' cuando llegues a cada punto";
     if (el.gpsAlertRetry) el.gpsAlertRetry.textContent  = 'Entendido';
     el.gpsAlertBanner.style.background = 'linear-gradient(135deg, #8C0A0A, #C8451E)';
     _currentGpsAlertLevel = 'lost';
@@ -855,6 +913,10 @@ function wireControls() {
   // Skip: manually advance to next stop and play immediately
   if (el.btnSkip) {
     el.btnSkip.addEventListener('click', () => {
+      if (el.btnSkip.hasAttribute('data-throttled')) return;
+      el.btnSkip.setAttribute('data-throttled', 'true');
+      setTimeout(() => el.btnSkip.removeAttribute('data-throttled'), 2000);
+
       if ('vibrate' in navigator) navigator.vibrate(50);
       logInfo('Parada omitida manualmente.');
       playCurrentStop();
@@ -921,9 +983,16 @@ function wireGPSEvents() {
     if (el.distanceValue) el.distanceValue.textContent  = distance;
     if (el.accuracyBadge) el.accuracyBadge.textContent  = `±${accuracy}m`;
     
+    // Highlight closest stops in the manual selector dropdown
+    const { route } = getState();
+    populateStopSelector(route, latitude, longitude);
+    
     // Update schematic map details
     if (el.mapEta) {
       el.mapEta.textContent = `🚏 Próxima en ${distance} m`;
+    }
+    if (el.mapDistancia) {
+      el.mapDistancia.textContent = `${distance} m`;
     }
     if (el.mapSpeed) {
       const kmh = speed !== null && speed >= 0 ? Math.round(speed * 3.6) : 0;
@@ -1044,6 +1113,13 @@ function wireStateSubscriptions() {
   subscribe(['currentStopIndex', 'route'], updateRouteUI);
   subscribe('route', (newRoute) => {
     populateStopSelector(newRoute);
+    // Reset offline cache status since the route has changed
+    localStorage.removeItem('audio_ilertren_offline_downloaded');
+    if (el.btnDownloadOffline) {
+      el.btnDownloadOffline.className = 'btn-edit';
+      const btnText = el.btnDownloadOffline.querySelector('.btn-text');
+      if (btnText) btnText.textContent = 'Descargar offline';
+    }
   });
   subscribe('gpsStatus',   (val) => updateGPSStatusUI(val));
   subscribe('audioStatus', (val) => updateAudioStatusUI(val));
@@ -1073,6 +1149,11 @@ function wireAudioProgressEvents() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
+  el.audioPlayer.addEventListener('play', () => {
+    el.progressBar.classList.add('playing-active');
+    el.progressBar.classList.remove('playing-ended');
+  });
+
   el.audioPlayer.addEventListener('timeupdate', () => {
     const current = el.audioPlayer.currentTime || 0;
     const duration = el.audioPlayer.duration || 0;
@@ -1095,6 +1176,7 @@ function wireAudioProgressEvents() {
 
   const resetProgressUI = () => {
     el.progressBar.style.width = '0%';
+    el.progressBar.classList.remove('playing-active', 'playing-ended');
     const elCurrent = document.getElementById('audioCurrentTime');
     const elDuration = document.getElementById('audioDuration');
     if (elCurrent) elCurrent.textContent = '0:00';
@@ -1103,12 +1185,43 @@ function wireAudioProgressEvents() {
 
   el.audioPlayer.addEventListener('emptied', resetProgressUI);
   el.audioPlayer.addEventListener('ended', () => {
-    resetProgressUI();
+    // Leave progress bar full at 100% when audio ends naturally
+    el.progressBar.style.width = '100%';
+    el.progressBar.classList.remove('playing-active');
+    el.progressBar.classList.add('playing-ended');
+    const duration = el.audioPlayer.duration || 0;
+    const elCurrent = document.getElementById('audioCurrentTime');
+    if (elCurrent) {
+      elCurrent.textContent = formatTime(duration);
+    }
     const { route, currentStopIndex } = getState();
     if (route.length > 0 && currentStopIndex >= route.length) {
       onRouteComplete();
     }
   });
+}
+
+// ─── Planilla Events ─────────────────────────────────────────────────────────
+
+function wirePlanillaEvents() {
+  if (el.btnOpenPlanilla) {
+    el.btnOpenPlanilla.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (el.planillaScreen && el.planillaIframe) {
+        el.planillaIframe.src = './planilla.html';
+        el.planillaScreen.classList.remove('hidden');
+      }
+    });
+  }
+
+  if (el.btnClosePlanilla) {
+    el.btnClosePlanilla.addEventListener('click', () => {
+      if (el.planillaScreen && el.planillaIframe) {
+        el.planillaScreen.classList.add('hidden');
+        el.planillaIframe.src = '';
+      }
+    });
+  }
 }
 
 // ─── Boot ────────────────────────────────────────────────────────────────────
@@ -1139,11 +1252,14 @@ async function boot() {
     wireEditorEvents();
     wireStateSubscriptions();
     wireAudioProgressEvents();
+    wirePlanillaEvents();
     
     // 5. Initialize secondary UI elements
     initRGPD();
     initTheme();
+    initFullscreenBtn();
     initAmbientToggle();
+    initDownloadOffline();
 
     // Start local time clock
     startClock();
@@ -1229,6 +1345,102 @@ function initTheme() {
       btn.title = 'Cambiar a modo noche';
       btn.setAttribute('aria-label', 'Cambiar a modo noche');
       localStorage.setItem('audio_ilertren_theme', 'day');
+    }
+  });
+}
+
+function initFullscreenBtn() {
+  const btn = el.btnFullscreen;
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      enterFullscreen().catch(err => {
+        if (typeof logWarn === 'function') logWarn(err.message);
+      });
+    } else {
+      exitFullscreen();
+    }
+  });
+}
+
+// ─── Offline Route Caching ───────────────────────────────────────────────────
+
+function initDownloadOffline() {
+  const btn = el.btnDownloadOffline;
+  if (!btn) return;
+
+  const btnText = btn.querySelector('.btn-text');
+
+  // Restore saved state
+  const savedState = localStorage.getItem('audio_ilertren_offline_downloaded');
+  if (savedState === 'success') {
+    btn.classList.add('success');
+    if (btnText) btnText.textContent = 'Todo descargado';
+  }
+
+  btn.addEventListener('click', async () => {
+    if (btn.classList.contains('downloading')) return;
+
+    btn.className = 'btn-edit downloading';
+    if (btnText) btnText.textContent = 'Preparando...';
+    if ('vibrate' in navigator) navigator.vibrate(50);
+
+    try {
+      const { route } = getState();
+      if (!route || route.length === 0) {
+        throw new Error('No hay ruta cargada.');
+      }
+
+      // Base assets to cache
+      const urls = [
+        './route.json',
+        './assets/ambientetren.mp3',
+        './assets/logos/ilertren-logo.png'
+      ];
+
+      // Add route audio files
+      route.forEach(stop => {
+        if (stop.audio && !stop.audio.startsWith('indexeddb_')) {
+          urls.push(`./audios/${encodeURIComponent(stop.audio)}`);
+        }
+      });
+
+      // Find active service worker cache
+      const cacheNames = await caches.keys();
+      const cacheName = cacheNames.find(name => name.startsWith('routemaker-')) || 'routemaker-v40';
+      const cache = await caches.open(cacheName);
+
+      let completed = 0;
+      const total = urls.length;
+
+      for (const url of urls) {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          await cache.put(url, response);
+          completed++;
+          const percent = Math.round((completed / total) * 100);
+          if (btnText) btnText.textContent = `Descargando... ${percent}%`;
+        } catch (err) {
+          console.error(`Failed to pre-download ${url}:`, err);
+          throw new Error(`Fallo en ${url.split('/').pop()}`);
+        }
+      }
+
+      btn.className = 'btn-edit success';
+      if (btnText) btnText.textContent = 'Todo descargado';
+      localStorage.setItem('audio_ilertren_offline_downloaded', 'success');
+      logSuccess('¡Ruta y audios guardados en caché local!');
+      if ('vibrate' in navigator) navigator.vibrate([100, 50, 100]);
+
+    } catch (err) {
+      console.error('Offline caching failed:', err);
+      btn.className = 'btn-edit error';
+      if (btnText) btnText.textContent = 'Error. Reintentar';
+      logError(`Descarga fallida: ${err.message}`);
+      if ('vibrate' in navigator) navigator.vibrate(300);
     }
   });
 }

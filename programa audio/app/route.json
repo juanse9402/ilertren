@@ -19,10 +19,10 @@
         "lat":  42.848175
     },
     {
-        "lon":  -2.673781,
+        "lon":  -2.673794,
         "audio":  "04_Canton Carnicerias.wav",
         "name":  "Canton Carnicerias",
-        "lat":  42.849797
+        "lat":  42.849711
     },
     {
         "lon":  -2.672981,
@@ -67,16 +67,16 @@
         "lat":  42.851589
     },
     {
-        "lon":  -2.674367,
+        "lon":  -2.674317,
         "audio":  "06_Murales.wav",
         "name":  "Murales",
-        "lat":  42.850411
+        "lat":  42.850497
     },
     {
-        "lon":  -2.674636,
+        "lon":  -2.674619,
         "audio":  "13_Cantones.wav",
         "name":  "Cantones",
-        "lat":  42.849386
+        "lat":  42.849542
     },
     {
         "lon":  -2.674581,

@@ -23,13 +23,12 @@
         </div>
         <div>
           <h1 class="brand-name">Audio Ilertren</h1>
-          <div class="brand-sub">Ilertren · Unidad 04</div>
+          <div class="brand-sub">Ilertren · Unidad Vitoria-Gasteiz</div>
         </div>
       </div>
 
       <div class="status-cluster">
         <span class="clock" id="currentTimeClock">12:00</span>
-        <div class="pill pill-net">📶 Offline · caché</div>
         <div class="pill pill-gps-off" id="gpsPill">
           <span class="dot" id="gpsDot"></span>
           <span id="gpsStatus">GPS inactivo</span>
@@ -38,7 +37,10 @@
         </div>
         <div style="display:flex;align-items:center;gap:12px;">
           <google-cast-launcher id="castButton" title="Conectar a Chromecast" style="display:inline-block;width:28px;height:28px;cursor:pointer;--connected-color:var(--ok);--disconnected-color:var(--paper-dimmer);"></google-cast-launcher>
-          <button id="btnTheme" class="btn-theme" aria-label="Cambiar modo" title="Modo claro / oscuro">☀️</button>
+          <button id="btnFullscreen" class="btn-theme" aria-label="Pantalla completa" title="Alternar pantalla completa" style="display:flex;align-items:center;justify-content:center; width:44px; height:44px; background:var(--coal-800); border:1px solid var(--coal-600); border-radius:8px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+          </button>
+          <button id="btnDownloadOffline" class="btn-edit" aria-label="Descargar ruta offline" title="Descargar audios y ruta para uso sin conexión"><span class="btn-icon">📥</span> <span class="btn-text">Descargar offline</span></button>
           <button id="btnOpenEditor" class="btn-edit" aria-label="Abrir editor de ruta">⚙ Editar ruta</button>
         </div>
       </div>
@@ -86,13 +88,13 @@
         </div>
 
         <div class="secondary-row">
-          <button class="secondary-btn" id="btnPlayLast" aria-label="Repetir anterior" disabled>
+          <button class="secondary-btn" id="btnPlayLast" aria-label="Repetir" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg>
-            Repetir anterior
+            Repetir
           </button>
-          <button class="btn-siguiente" id="btnSkip" aria-label="Siguiente parada">
+          <button class="btn-siguiente" id="btnSkip" aria-label="Siguiente audio">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg>
-            Siguiente parada
+            Siguiente audio
           </button>
         </div>
 
@@ -178,6 +180,13 @@
       <h2 class="editor-title">Editor de ruta</h2>
       <button id="btnCloseEditor" class="btn-edit" aria-label="Cerrar editor">✕ Cerrar</button>
     </header>
+    <div class="editor-actions" style="border-bottom: 1px solid var(--coal-600); padding-bottom: 12px; margin-bottom: 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <div class="pill pill-net" style="margin: 0; background:var(--coal-800); border:1px solid var(--coal-600); padding: 6px 12px; border-radius: 6px;">📶 Offline · caché</div>
+      <button id="btnTheme" class="btn-edit" aria-label="Cambiar modo" title="Modo claro / oscuro">☀️ Tema</button>
+      <button id="btnOpenPlanilla" class="btn-edit" aria-label="Abrir planilla de cuentas" title="Abrir Planilla de Cuentas">
+        <span class="btn-icon">💶</span> <span class="btn-text">Planilla €/$</span>
+      </button>
+    </div>
     <div class="editor-actions">
       <button id="btnExport" class="btn-edit">📥 Exportar ruta</button>
       <button id="btnAddStop" class="btn-edit" style="border-color:var(--brass);color:var(--brass);">+ Nueva parada</button>
@@ -233,6 +242,17 @@
       </div>
       <p id="pinError" style="color:var(--brick-bright); font-size:13px;
          margin-top:10px; display:none;">PIN incorrecto</p>
+    </div>
+  </div>
+
+  <!-- PLANILLA SCREEN (OVERLAY) -->
+  <div id="planillaScreen" class="editor-overlay hidden" role="dialog" aria-modal="true" aria-label="Planilla de cuentas">
+    <header class="editor-header">
+      <h2 class="editor-title">Planilla de cuentas</h2>
+      <button id="btnClosePlanilla" class="btn-edit" aria-label="Cerrar planilla">✕ Cerrar</button>
+    </header>
+    <div style="width: 100%; height: calc(100% - 56px); overflow: hidden; background: var(--coal-950);">
+      <iframe id="planillaIframe" src="./planilla.html" style="width: 100%; height: 100%; border: none;"></iframe>
     </div>
   </div>
 
