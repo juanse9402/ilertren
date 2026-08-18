@@ -3,6 +3,7 @@
         "lon":  -2.673345,
         "audio":  "01_Virgen Blanca.wav",
         "name":  "Bienvenida",
+        "image": "assets/stops/01_virgen_blanca.png",
         "lat":  42.846635
     },
     {
