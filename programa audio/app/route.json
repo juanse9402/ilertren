@@ -86,16 +86,16 @@
         "lat":  42.848296
     },
     {
-        "lon":  -2.675068,
-        "audio":  "15_Calles peatonales.wav",
-        "name":  "Calles peatonales",
-        "lat":  42.847905
-    },
-    {
         "lon":  -2.674937,
         "audio":  "16_Palacio Provincia.wav",
         "name":  "Palacio Provincia",
         "lat":  42.847225
+    },
+    {
+        "lon":  -2.6763945107102547,
+        "audio":  "15_Calles peatonales.wav",
+        "name":  "Calles peatonales",
+        "lat":  42.84722892358546
     },
     {
         "lon":  -2.676814,

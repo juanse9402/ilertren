@@ -88,15 +88,15 @@ Este documento contiene la transcripción completa de los 30 audios del tren tur
 
 ---
 
-## 🔊 Parada: 15_Calles peatonales
-
-> Gastéis guizan el rico iría da, oñezco en sacó un eugariditoena. Ori esker pasea de secoeta las setas u nezgos a seco le cuá proposada. Vitoria Gasteis es una ciudad escala humana con numerosas tonas piatónales que la hacen ideal para pasear y disfrutar contra enquilidad. Batori Gastís es un humano scale city with numerous pedestrian areas that make it ideal for walking and enjoying peaceful atmosphere
-
----
-
 ## 🔊 Parada: 16_Palacio Provincia
 
 > Provincia y Auregía hará baco foro al Dundiaren egoyzada. Hace aldeán, arguíar en basó a escultura dago Frankis mueren víctimen homenes El palacio de la provincia es la sede del adiputación foral de Alaba En su trasera la escultura bosque de luz está dedicadas las víctimas del franquismo ¿Qué es el frangoísmo?
+
+---
+
+## 🔊 Parada: 15_Calles peatonales
+
+> Gastéis guizan el rico iría da, oñezco en sacó un eugariditoena. Ori esker pasea de secoeta las setas u nezgos a seco le cuá proposada. Vitoria Gasteis es una ciudad escala humana con numerosas tonas piatónales que la hacen ideal para pasear y disfrutar contra enquilidad. Batori Gastís es un humano scale city with numerous pedestrian areas that make it ideal for walking and enjoying peaceful atmosphere
 
 ---
 
