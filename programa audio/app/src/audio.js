@@ -365,11 +365,19 @@ export async function playCurrentStop() {
   }
 
   const stop = route[currentStopIndex];
+
+  if (stop.isCheckpoint) {
+    logSuccess(`📍 Punto de control silencioso alcanzado: ${stop.name}`);
+    setState({ currentStopIndex: currentStopIndex + 1 });
+    return;
+  }
+
   logInfo(`▶ Reproduciendo: ${stop.name}`);
 
   // Sincronizar transmisión al Chromecast
   try {
-    const stopNumStr = String(currentStopIndex + 1).padStart(2, '0');
+    const match = stop.audio ? stop.audio.match(/^(\d+)/) : null;
+    const stopNumStr = match ? match[1].padStart(2, '0') : String(currentStopIndex + 1).padStart(2, '0');
     const videoFilename = stop.audio.replace(/\.wav$/i, '.mp4');
     const videoUrl = `${window.location.origin}/SDVideo/${stopNumStr}/${videoFilename}`;
     castVideo(videoUrl, stop.name);

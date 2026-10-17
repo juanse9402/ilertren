@@ -205,6 +205,9 @@ function updateStopField(index, field, rawValue) {
   const { route } = getState();
   const updated = route.map((stop, i) => {
     if (i !== index) return stop;
+    if (field === 'isCheckpoint') {
+      return { ...stop, [field]: !!rawValue };
+    }
     const value = (field === 'lat' || field === 'lon')
       ? parseFloat(rawValue)
       : String(rawValue);
@@ -329,7 +332,7 @@ export function render() {
       </div>
 
       <div class="field-row">
-        <label class="field-upload-label" for="audio-${index}">🎵 Subir audio</label>
+        <label class="field-upload-label" for="audio-${index}" style="${stop.isCheckpoint ? 'display:none;' : ''}">🎵 Subir audio</label>
         <input
           id="audio-${index}"
           type="file"
@@ -337,8 +340,16 @@ export function render() {
           aria-label="Subir audio para parada ${index + 1}"
           data-index="${index}"
           class="audio-file-input"
+          style="${stop.isCheckpoint ? 'display:none;' : ''}"
         >
-        <span class="audio-display">${_escapeHtml(audioLabel)}</span>
+        <span class="audio-display" style="${stop.isCheckpoint ? 'display:none;' : ''}">${_escapeHtml(audioLabel)}</span>
+      </div>
+
+      <div class="field-row">
+        <label style="font-size: 0.9em; display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" class="checkpoint-checkbox" data-index="${index}" ${stop.isCheckpoint ? 'checked' : ''}>
+          Punto de control silencioso (ignorar audio)
+        </label>
       </div>
 
       <div class="coords-row">
@@ -385,6 +396,20 @@ export function render() {
         }
       });
     });
+
+    const chk = li.querySelector('.checkpoint-checkbox');
+    if (chk) {
+      chk.addEventListener('change', (e) => {
+        updateStopField(index, 'isCheckpoint', e.target.checked);
+        const row = li.querySelector('.field-upload-label');
+        const fileInput = li.querySelector('.audio-file-input');
+        const display = li.querySelector('.audio-display');
+        const show = !e.target.checked;
+        if (row) row.style.display = show ? '' : 'none';
+        if (fileInput) fileInput.style.display = show ? '' : 'none';
+        if (display) display.style.display = show ? '' : 'none';
+      });
+    }
 
     li.querySelector('.audio-file-input').addEventListener('change', (e) => {
       uploadAudio(index, e.target.files[0]);
